@@ -64,7 +64,9 @@
     <div class="card">
       <div class="card-header flex items-center justify-between">
         <h3 class="font-semibold text-slate-900 text-sm">Wallets</h3>
-        <span class="badge badge-slate">Coming next</span>
+        <a href="{{ route('projects.wallets.index', $project) }}" class="text-xs text-brand-600 hover:text-brand-700 font-medium">
+          View all →
+        </a>
       </div>
       <div class="card-body flex flex-col items-center justify-center py-10 text-center">
         <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-3">
@@ -73,7 +75,10 @@
           </svg>
         </div>
         <p class="text-sm font-medium text-slate-700">No wallets yet</p>
-        <p class="text-xs text-slate-400 mt-1">Wallets will appear here in the next phase.</p>
+        <p class="text-xs text-slate-400 mt-1 mb-4">Wallets hold simulated balances and ledger history.</p>
+        <a href="{{ route('projects.wallets.create', $project) }}" class="btn-primary text-xs px-3 py-1.5">
+          + Add wallet
+        </a>
       </div>
     </div>
 

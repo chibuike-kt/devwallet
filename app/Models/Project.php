@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
@@ -79,5 +80,10 @@ class Project extends Model
                 $project->slug = Str::slug($project->name) . '-' . Str::random(6);
             }
         });
+    }
+
+    public function wallets(): HasMany
+    {
+        return $this->hasMany(Wallet::class);
     }
 }

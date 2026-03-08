@@ -8,6 +8,8 @@ use App\Observers\UserObserver;
 use App\Policies\ProjectPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Wallet;
+use App\Policies\WalletPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,10 +20,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Register observers
         User::observe(UserObserver::class);
 
-        // Register policies
         Gate::policy(Project::class, ProjectPolicy::class);
+        Gate::policy(Wallet::class, WalletPolicy::class);
     }
 }

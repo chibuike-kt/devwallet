@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -14,6 +15,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('dashboard');
 
     Route::resource('projects', ProjectController::class)
+        ->only(['index', 'create', 'store', 'show', 'destroy']);
+
+    // Wallets are nested under projects
+    Route::resource('projects.wallets', WalletController::class)
         ->only(['index', 'create', 'store', 'show', 'destroy']);
 });
 

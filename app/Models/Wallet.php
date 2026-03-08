@@ -30,6 +30,13 @@ class Wallet extends Model
         'metadata'          => 'array',
     ];
 
+    protected $attributes = [
+        'balance'           => 0,
+        'available_balance' => 0,
+        'ledger_balance'    => 0,
+        'status'            => 'active',
+    ];
+
     // ─── Relationships ────────────────────────────────────────────────────────
 
     public function project(): BelongsTo
@@ -37,7 +44,16 @@ class Wallet extends Model
         return $this->belongsTo(Project::class);
     }
 
-    // Future: transactions(), ledgerEntries() added in Phase 3
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function ledgerEntries()
+    {
+        return $this->hasMany(LedgerEntry::class);
+    }
+
 
     // ─── Scopes ───────────────────────────────────────────────────────────────
 

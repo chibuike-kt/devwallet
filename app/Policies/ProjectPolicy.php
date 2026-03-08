@@ -4,63 +4,38 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ProjectPolicy
 {
     /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Project $project): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can create models.
+     * Any authenticated user can create projects.
      */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Only the project owner can view it.
+     */
+    public function view(User $user, Project $project): bool
+    {
+        return $user->id === $project->user_id;
+    }
+
+    /**
+     * Only the project owner can update it.
      */
     public function update(User $user, Project $project): bool
     {
-        return false;
+        return $user->id === $project->user_id;
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Only the project owner can delete/archive it.
      */
     public function delete(User $user, Project $project): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Project $project): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Project $project): bool
-    {
-        return false;
+        return $user->id === $project->user_id;
     }
 }

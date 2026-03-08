@@ -2,47 +2,26 @@
 
 namespace App\Observers;
 
+use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class UserObserver
 {
     /**
-     * Handle the User "created" event.
+     * Seed a default demo project when a new user registers.
      */
     public function created(User $user): void
     {
-        //
-    }
+        $name = 'My First Project';
 
-    /**
-     * Handle the User "updated" event.
-     */
-    public function updated(User $user): void
-    {
-        //
-    }
-
-    /**
-     * Handle the User "deleted" event.
-     */
-    public function deleted(User $user): void
-    {
-        //
-    }
-
-    /**
-     * Handle the User "restored" event.
-     */
-    public function restored(User $user): void
-    {
-        //
-    }
-
-    /**
-     * Handle the User "force deleted" event.
-     */
-    public function forceDeleted(User $user): void
-    {
-        //
+        $user->projects()->create([
+            'name'        => $name,
+            'slug'        => Str::slug($name) . '-' . Str::random(6),
+            'description' => 'Auto-generated demo project. Use this to explore DevWallet.',
+            'environment' => 'test',
+            'color'       => '#0e8de6',
+            'status'      => 'active',
+        ]);
     }
 }

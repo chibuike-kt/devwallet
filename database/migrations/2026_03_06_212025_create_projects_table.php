@@ -6,20 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+
+            // Environment type: test or staging
+            $table->string('environment')->default('test');
+
+            // Visual identifier for the UI
+            $table->string('color')->default('#0e8de6');
+
+            // Soft status: active, archived
+            $table->string('status')->default('active');
+
             $table->timestamps();
+
+            $table->index(['user_id', 'status']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('projects');

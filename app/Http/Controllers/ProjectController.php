@@ -2,63 +2,70 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectRequest;
+use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): View
     {
-        //
+        $projects = $request->user()
+            ->projects()
+            ->active()
+            ->latest()
+            ->get();
+
+        return view('projects.index', compact('projects'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
-        //
+        return view('projects.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request): RedirectResponse
     {
-        //
+        $project = $request->user()->projects()->create([
+            'name'        => $request->name,
+            'description' => $request->description,
+            'environment' => $request->environment,
+            'color'       => $request->color ?? '#0e8de6',
+        ]);
+
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($project)
+            ->log('Created project: ' . $project->name);
+
+        return redirect()
+            ->route('projects.show', $project)
+            ->with('success', 'Project "' . $project->name . '" created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Request $request, Project $project): View
     {
-        //
+        $this->authorize('view', $project);
+
+        return view('projects.show', compact('project'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function destroy(Request $request, Project $project): RedirectResponse
     {
-        //
-    }
+        $this->authorize('delete', $project);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        // Soft-archive rather than hard delete for demo safety
+        $project->update(['status' => 'archived']);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($project)
+            ->log('Archived project: ' . $project->name);
+
+        return redirect()
+            ->route('projects.index')
+            ->with('success', 'Project archived.');
     }
 }

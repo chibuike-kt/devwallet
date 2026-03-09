@@ -86,4 +86,14 @@ class Project extends Model
     {
         return $this->hasMany(Wallet::class);
     }
+
+    public function webhookEndpoints(): HasMany
+    {
+        return $this->hasMany(WebhookEndpoint::class);
+    }
+
+    public function webhookEvents(): HasMany
+    {
+        return $this->hasMany(WebhookEvent::class);
+    }
 }

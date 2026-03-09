@@ -45,7 +45,8 @@
   @php
   $walletCount = $project->wallets()->count();
   $txCount = \App\Models\Transaction::where('project_id', $project->id)->count();
-  $ledgerCount = \App\Models\LedgerEntry::where('wallet_id', $project->wallets()->pluck('id'))->count();
+  $walletIds = $project->wallets()->pluck('id');
+  $ledgerCount = \App\Models\LedgerEntry::whereIn('wallet_id', $walletIds)->count();
   $webhookCount = 0;
   @endphp
 

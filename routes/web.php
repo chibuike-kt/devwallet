@@ -8,6 +8,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookDeliveryController;
 use App\Http\Controllers\WebhookEndpointController;
+use App\Http\Controllers\AuditLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => view('welcome'))->name('welcome');
@@ -133,6 +134,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [WebhookDeliveryController::class, 'retry']
     )
         ->name('projects.webhook-deliveries.retry');
+
+    Route::get('/audit', [AuditLogController::class, 'index'])
+        ->name('audit.index');
 });
 
 require __DIR__ . '/auth.php';

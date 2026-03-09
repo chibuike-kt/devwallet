@@ -105,7 +105,7 @@
                     Transactions
                 </a>
 
-                
+
                 <a href="{{ route('projects.webhooks.index', $activeProject) }}"
                     class="sidebar-link {{ request()->routeIs('projects.webhooks.*') ? 'active' : '' }}">
                     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,12 +148,12 @@
 
                 <p class="px-3 pt-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">System</p>
 
-                <a href="#" class="sidebar-link">
+                <a href="{{ route('audit.index') }}"
+                    class="sidebar-link {{ request()->routeIs('audit.*') ? 'active' : '' }}">
                     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     Audit Log
-                    <span class="ml-auto badge badge-slate">Soon</span>
                 </a>
 
             </nav>

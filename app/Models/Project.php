@@ -96,4 +96,9 @@ class Project extends Model
     {
         return $this->hasMany(WebhookEvent::class);
     }
+
+    public function settlementBatches(): HasMany
+    {
+        return $this->hasMany(SettlementBatch::class);
+    }
 }

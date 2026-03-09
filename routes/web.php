@@ -10,6 +10,7 @@ use App\Http\Controllers\WebhookDeliveryController;
 use App\Http\Controllers\WebhookEndpointController;
 use App\Http\Controllers\AuditLogController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SettlementController;
 
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
@@ -137,6 +138,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/audit', [AuditLogController::class, 'index'])
         ->name('audit.index');
+
+    // Settlements
+    Route::get(
+        'projects/{project}/settlements',
+        [SettlementController::class, 'index']
+    )
+        ->name('projects.settlements.index');
+
+    Route::post(
+        'projects/{project}/settlements/run',
+        [SettlementController::class, 'run']
+    )
+        ->name('projects.settlements.run');
+
+    Route::get(
+        'projects/{project}/settlements/{batch}',
+        [SettlementController::class, 'show']
+    )
+        ->name('projects.settlements.show');
 });
 
 require __DIR__ . '/auth.php';

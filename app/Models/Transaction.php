@@ -31,6 +31,7 @@ class Transaction extends Model
         'provider_reference',
         'failure_reason',
         'metadata',
+        'settlement_batch_id',
         'completed_at',
     ];
 
@@ -91,6 +92,11 @@ class Transaction extends Model
     public function isReversed(): bool
     {
         return $this->status === TransactionStatus::Reversed;
+    }
+
+    public function settlementBatch(): BelongsTo
+    {
+        return $this->belongsTo(SettlementBatch::class);
     }
 
     // ─── Boot ─────────────────────────────────────────────────────────────────

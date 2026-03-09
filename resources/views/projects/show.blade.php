@@ -42,19 +42,30 @@
     </div>
   </div>
 
-  {{-- Stats row (placeholder — will populate next phases) --}}
+  @php
+  $walletCount = $project->wallets()->count();
+  $txCount = \App\Models\Transaction::where('project_id', $project->id)->count();
+  $ledgerCount = \App\Models\LedgerEntry::where('wallet_id', $project->wallets()->pluck('id'))->count();
+  $webhookCount = 0;
+  @endphp
+
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    @foreach([
-    ['label' => 'Wallets', 'value' => '0', 'color' => 'brand'],
-    ['label' => 'Transactions', 'value' => '0', 'color' => 'emerald'],
-    ['label' => 'Ledger Entries', 'value' => '0', 'color' => 'violet'],
-    ['label' => 'Webhook Events', 'value' => '0', 'color' => 'amber'],
-    ] as $stat)
     <div class="card p-5">
-      <p class="text-xs font-medium text-slate-500 mb-2">{{ $stat['label'] }}</p>
-      <p class="text-2xl font-bold text-slate-900">{{ $stat['value'] }}</p>
+      <p class="text-xs font-medium text-slate-500 mb-2">Wallets</p>
+      <p class="text-2xl font-bold text-slate-900">{{ $walletCount }}</p>
     </div>
-    @endforeach
+    <div class="card p-5">
+      <p class="text-xs font-medium text-slate-500 mb-2">Transactions</p>
+      <p class="text-2xl font-bold text-slate-900">{{ $txCount }}</p>
+    </div>
+    <div class="card p-5">
+      <p class="text-xs font-medium text-slate-500 mb-2">Ledger Entries</p>
+      <p class="text-2xl font-bold text-slate-900">{{ $ledgerCount }}</p>
+    </div>
+    <div class="card p-5">
+      <p class="text-xs font-medium text-slate-500 mb-2">Webhook Events</p>
+      <p class="text-2xl font-bold text-slate-900">{{ $webhookCount }}</p>
+    </div>
   </div>
 
   {{-- Module panels --}}
@@ -64,38 +75,128 @@
     <div class="card">
       <div class="card-header flex items-center justify-between">
         <h3 class="font-semibold text-slate-900 text-sm">Wallets</h3>
-        <a href="{{ route('projects.wallets.index', $project) }}" class="text-xs text-brand-600 hover:text-brand-700 font-medium">
-          View all →
+        <a href="{{ route('projects.wallets.create', $project) }}"
+          class="text-xs text-brand-600 hover:text-brand-700 font-medium">
+          + New wallet
         </a>
       </div>
+      @php $projectWallets = $project->wallets()->latest()->get(); @endphp
+      @if($projectWallets->isEmpty())
       <div class="card-body flex flex-col items-center justify-center py-10 text-center">
-        <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-3">
-          <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-        </div>
-        <p class="text-sm font-medium text-slate-700">No wallets yet</p>
-        <p class="text-xs text-slate-400 mt-1 mb-4">Wallets hold simulated balances and ledger history.</p>
+        <p class="text-sm text-slate-500 mb-3">No wallets yet.</p>
         <a href="{{ route('projects.wallets.create', $project) }}" class="btn-primary text-xs px-3 py-1.5">
-          + Add wallet
+          Create first wallet
         </a>
       </div>
+      @else
+      <div class="divide-y divide-slate-100">
+        @foreach($projectWallets as $w)
+        <a href="{{ route('projects.wallets.show', [$project, $w]) }}"
+          class="flex items-center justify-between px-6 py-3.5 hover:bg-surface-50 transition-colors group">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center">
+              <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-800 group-hover:text-brand-700 transition-colors">
+                {{ $w->name }}
+              </p>
+              <span class="{{ $w->statusBadgeClass() }} badge capitalize text-xs mt-0.5">
+                {{ $w->status }}
+              </span>
+            </div>
+          </div>
+          <p class="text-sm font-bold text-slate-900">{{ $w->formattedBalance() }}</p>
+        </a>
+        @endforeach
+      </div>
+      <div class="px-6 py-3 border-t border-slate-100">
+        <a href="{{ route('projects.wallets.index', $project) }}"
+          class="text-xs text-brand-600 hover:text-brand-700 font-medium">
+          View all wallets →
+        </a>
+      </div>
+      @endif
     </div>
 
     {{-- Recent transactions panel --}}
     <div class="card">
       <div class="card-header flex items-center justify-between">
         <h3 class="font-semibold text-slate-900 text-sm">Recent Transactions</h3>
-        <span class="badge badge-slate">Coming soon</span>
+        <a href="{{ route('projects.transactions.index', $project) }}"
+          class="text-xs text-brand-600 hover:text-brand-700 font-medium">
+          View all →
+        </a>
       </div>
+      @php
+      $recentTx = \App\Models\Transaction::where('project_id', $project->id)
+      ->with('wallet')
+      ->latest()
+      ->take(5)
+      ->get();
+      @endphp
+      @if($recentTx->isEmpty())
       <div class="card-body flex flex-col items-center justify-center py-10 text-center">
-        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-3">
-          <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <p class="text-sm text-slate-500 mb-3">No transactions yet.</p>
+        <a href="{{ route('projects.scenarios.index', $project) }}" class="btn-primary text-xs px-3 py-1.5">
+          Run a scenario
+        </a>
+      </div>
+      @else
+      <div class="divide-y divide-slate-100">
+        @foreach($recentTx as $tx)
+        <a href="{{ route('projects.transactions.show', [$project, $tx]) }}"
+          class="flex items-center justify-between px-6 py-3.5 hover:bg-surface-50 transition-colors group">
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-1">
+              <span class="{{ $tx->type->badgeClass() }} badge text-xs">
+                {{ $tx->type->label() }}
+              </span>
+              <span class="font-mono text-xs text-slate-400">
+                {{ Str::limit($tx->reference, 18) }}
+              </span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-semibold text-slate-900">
+              {{ $tx->wallet->formatAmount($tx->amount) }}
+            </p>
+            <span class="{{ $tx->status->badgeClass() }} badge text-xs mt-0.5">
+              {{ $tx->status->label() }}
+            </span>
+          </div>
+        </a>
+        @endforeach
+      </div>
+      @endif
+    </div>
+
+    {{-- Quick actions --}}
+    <div class="card lg:col-span-2">
+      <div class="card-header">
+        <h3 class="font-semibold text-slate-900 text-sm">Quick actions</h3>
+      </div>
+      <div class="card-body flex flex-wrap gap-3">
+        <a href="{{ route('projects.scenarios.index', $project) }}" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Run scenario
+        </a>
+        <a href="{{ route('projects.wallets.create', $project) }}" class="btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add wallet
+        </a>
+        <a href="{{ route('projects.transactions.index', $project) }}" class="btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
           </svg>
-        </div>
-        <p class="text-sm font-medium text-slate-700">No transactions yet</p>
-        <p class="text-xs text-slate-400 mt-1">Run a simulation to see transactions here.</p>
+          View transactions
+        </a>
       </div>
     </div>
 

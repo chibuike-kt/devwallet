@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +21,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('projects.wallets', WalletController::class)
         ->only(['index', 'create', 'store', 'show', 'destroy']);
 
-    // Transactions scoped to a project
     Route::get(
         'projects/{project}/transactions',
         [TransactionController::class, 'index']
@@ -33,12 +33,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->name('projects.transactions.show');
 
-    // Ledger scoped to a wallet inside a project
     Route::get(
         'projects/{project}/wallets/{wallet}/ledger',
         [LedgerController::class, 'index']
     )
         ->name('projects.wallets.ledger');
+
+    // Scenarios
+    Route::get(
+        'projects/{project}/scenarios',
+        [ScenarioController::class, 'index']
+    )
+        ->name('projects.scenarios.index');
+
+    Route::post(
+        'projects/{project}/scenarios/run',
+        [ScenarioController::class, 'run']
+    )
+        ->name('projects.scenarios.run');
 });
 
 require __DIR__ . '/auth.php';

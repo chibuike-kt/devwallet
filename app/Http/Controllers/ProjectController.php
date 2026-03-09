@@ -49,6 +49,9 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Remember which project the user is working in
+        session(['active_project_id' => $project->id]);
+
         return view('projects.show', compact('project'));
     }
 

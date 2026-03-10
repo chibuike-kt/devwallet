@@ -13,11 +13,11 @@ class TransactionService
   public function __construct(protected LedgerService $ledger) {}
 
   public function fund(
-    Wallet $wallet,
-    int    $amount,
-    string $narration       = 'Wallet funding',
-    string $provider        = 'simulation',
-    ?string $idempotencyKey = null
+    Wallet  $wallet,
+    int     $amount,
+    string  $narration,
+    string  $provider = 'simulation',
+    ?string $idempotencyKey = null,
   ): Transaction {
     // Idempotency check: return existing if key already used
     if ($idempotencyKey) {
@@ -79,11 +79,11 @@ class TransactionService
   }
 
   public function debit(
-    Wallet $wallet,
-    int    $amount,
-    string $narration       = 'Wallet debit',
-    string $provider        = 'simulation',
-    ?string $idempotencyKey = null
+    Wallet  $wallet,
+    int     $amount,
+    string  $narration,
+    string  $provider = 'simulation',
+    ?string $idempotencyKey = null,
   ): Transaction {
     if ($idempotencyKey) {
       $existing = Transaction::where('idempotency_key', $idempotencyKey)->first();
@@ -158,11 +158,11 @@ class TransactionService
   }
 
   public function transfer(
-    Wallet $from,
-    Wallet $to,
-    int    $amount,
-    string $narration       = 'Wallet transfer',
-    ?string $idempotencyKey = null
+    Wallet  $from,
+    Wallet  $to,
+    int     $amount,
+    string  $narration,
+    ?string $idempotencyKey = null,
   ): Transaction {
     if ($idempotencyKey) {
       $existing = Transaction::where('idempotency_key', $idempotencyKey)->first();

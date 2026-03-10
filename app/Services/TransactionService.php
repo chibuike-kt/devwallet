@@ -12,11 +12,6 @@ class TransactionService
 {
   public function __construct(protected LedgerService $ledger) {}
 
-  /**
-   * Fund a wallet (credit). Creates a transaction + ledger entry atomically.
-   *
-   * @throws \RuntimeException on frozen/closed wallet
-   */
   public function fund(
     Wallet $wallet,
     int    $amount,
@@ -83,10 +78,6 @@ class TransactionService
     });
   }
 
-  /**
-   * Debit a wallet. Creates a transaction + ledger entry atomically.
-   * Produces a failed transaction record on insufficient balance.
-   */
   public function debit(
     Wallet $wallet,
     int    $amount,
@@ -166,10 +157,6 @@ class TransactionService
     });
   }
 
-  /**
-   * Transfer between two wallets in the same project.
-   * Creates two transactions (debit + credit) and two ledger entries.
-   */
   public function transfer(
     Wallet $from,
     Wallet $to,
@@ -261,10 +248,6 @@ class TransactionService
     });
   }
 
-  /**
-   * Reverse a successful transaction.
-   * Restores the wallet balance and writes offsetting ledger entries.
-   */
   public function reverse(Transaction $transaction, string $reason = 'Reversal'): Transaction
   {
     if (! $transaction->status->canTransitionTo(TransactionStatus::Reversed)) {
@@ -327,9 +310,6 @@ class TransactionService
     });
   }
 
-  /**
-   * Internal helper: record a clean failed transaction without touching balances.
-   */
   private function recordFailedTransaction(
     Wallet          $wallet,
     int             $amount,

@@ -101,4 +101,9 @@ class Project extends Model
     {
         return $this->hasMany(SettlementBatch::class);
     }
+
+    public function apiKeys(): HasMany
+    {
+        return $this->hasMany(ApiKey::class);
+    }
 }

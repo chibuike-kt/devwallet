@@ -11,6 +11,7 @@ use App\Http\Controllers\WebhookEndpointController;
 use App\Http\Controllers\AuditLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\ApiKeyController;
 
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
@@ -157,6 +158,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [SettlementController::class, 'show']
     )
         ->name('projects.settlements.show');
+
+    // API Keys
+    Route::get(
+        'projects/{project}/api-keys',
+        [ApiKeyController::class, 'index']
+    )
+        ->name('projects.api-keys.index');
+
+    Route::post(
+        'projects/{project}/api-keys',
+        [ApiKeyController::class, 'store']
+    )
+        ->name('projects.api-keys.store');
+
+    Route::post(
+        'projects/{project}/api-keys/{apiKey}/revoke',
+        [ApiKeyController::class, 'revoke']
+    )
+        ->name('projects.api-keys.revoke');
 });
 
 require __DIR__ . '/auth.php';

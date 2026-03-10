@@ -9,10 +9,6 @@ use App\Models\Wallet;
 
 class LedgerService
 {
-  /**
-   * Write a credit ledger entry for a completed transaction.
-   * Called after the wallet balance has been updated.
-   */
   public function recordCredit(
     Wallet $wallet,
     Transaction $transaction,
@@ -29,10 +25,6 @@ class LedgerService
     ]);
   }
 
-  /**
-   * Write a debit ledger entry for a completed transaction.
-   * Called after the wallet balance has been updated.
-   */
   public function recordDebit(
     Wallet $wallet,
     Transaction $transaction,
@@ -49,11 +41,6 @@ class LedgerService
     ]);
   }
 
-  /**
-   * Verify ledger integrity: sum of credits minus sum of debits
-   * should equal the wallet's current balance.
-   * Useful for debugging and audit scenarios.
-   */
   public function verifyBalance(Wallet $wallet): array
   {
     $credits = LedgerEntry::where('wallet_id', $wallet->id)

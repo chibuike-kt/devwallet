@@ -12,6 +12,7 @@ use App\Http\Controllers\AuditLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ApiKeyController;
+use App\Http\Controllers\TransactionExportController;
 
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
@@ -68,6 +69,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [TransactionController::class, 'index']
     )
         ->name('projects.transactions.index');
+
+    Route::get(
+        'projects/{project}/transactions/export',
+        TransactionExportController::class
+    )
+        ->name('projects.transactions.export');
 
     Route::get(
         'projects/{project}/transactions/{transaction}',
@@ -177,6 +184,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [ApiKeyController::class, 'revoke']
     )
         ->name('projects.api-keys.revoke');
+
 });
 
 require __DIR__ . '/auth.php';

@@ -20,6 +20,54 @@
     </div>
   </div>
 
+  {{-- Export + filter bar --}}
+  <div class="card p-5 mb-6">
+    <form method="GET"
+      action="{{ route('projects.transactions.export', $project) }}"
+      class="flex flex-wrap items-end gap-3">
+
+      <div class="flex-1 min-w-40">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-input">
+          <option value="">All statuses</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+          <option value="pending">Pending</option>
+          <option value="reversed">Reversed</option>
+        </select>
+      </div>
+
+      <div class="flex-1 min-w-40">
+        <label class="form-label">Wallet</label>
+        <select name="wallet_id" class="form-input">
+          <option value="">All wallets</option>
+          @foreach($project->wallets as $wallet)
+          <option value="{{ $wallet->id }}">{{ $wallet->name }}</option>
+          @endforeach
+        </select>
+      </div>
+
+      <div class="flex-1 min-w-36">
+        <label class="form-label">From</label>
+        <input type="date" name="date_from" class="form-input">
+      </div>
+
+      <div class="flex-1 min-w-36">
+        <label class="form-label">To</label>
+        <input type="date" name="date_to" class="form-input">
+      </div>
+
+      <button type="submit" class="btn-primary flex-shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Export CSV
+      </button>
+
+    </form>
+  </div>
+
   @if($transactions->isEmpty())
   <div class="card">
     <div class="card-body flex flex-col items-center justify-center py-20 text-center">

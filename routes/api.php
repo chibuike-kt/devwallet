@@ -1,51 +1,50 @@
 <?php
 
-use App\Http\Controllers\Api\ProjectController;
-use App\Http\Controllers\Api\SettlementController;
-use App\Http\Controllers\Api\TransactionController;
-use App\Http\Controllers\Api\WalletController;
-use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\Paystack\AuthorizationController;
+use App\Http\Controllers\Api\Paystack\BalanceController;
+use App\Http\Controllers\Api\Paystack\CustomerController;
+use App\Http\Controllers\Api\Paystack\RefundController;
+use App\Http\Controllers\Api\Paystack\TransactionController;
+use App\Http\Controllers\Api\Paystack\TransferController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->middleware('auth.apikey')->group(function () {
+Route::prefix('api')->group(function () {
 
   // ── Health ────────────────────────────────────────────────────────────────
   Route::get('ping', fn() => response()->json([
-    'status'    => 'ok',
-    'message'   => 'DevWallet API is running.',
-    'timestamp' => now()->toIso8601String(),
+    'status'  => true,
+    'message' => 'DevWallet Paystack Sandbox is running.',
   ]));
 
-  // ── Project ───────────────────────────────────────────────────────────────
-  Route::get('project', [ProjectController::class, 'show']);
+  // ── Paystack-compatible API ───────────────────────────────────────────────
+  Route::prefix('paystack')
+    ->middleware('auth.apikey')
+    ->group(function () {
 
-  // ── Wallets ───────────────────────────────────────────────────────────────
-  Route::get('wallets',                        [WalletController::class, 'index']);
-  Route::post('wallets',                       [WalletController::class, 'store']);
-  Route::get('wallets/{reference}',            [WalletController::class, 'show']);
-  Route::post('wallets/{reference}/fund',      [WalletController::class, 'fund']);
-  Route::post('wallets/{reference}/debit',     [WalletController::class, 'debit']);
-  Route::post('wallets/{reference}/freeze',    [WalletController::class, 'freeze']);
-  Route::post('wallets/{reference}/unfreeze',  [WalletController::class, 'unfreeze']);
-  Route::get('wallets/{reference}/ledger',     [WalletController::class, 'ledger']);
-  Route::get('wallets/{reference}/transactions', [WalletController::class, 'transactions']);
-  Route::post('wallets/transfer',              [WalletController::class, 'transfer']);
+      // Transactions
+      Route::post('transaction/initialize',        [TransactionController::class, 'initialize']);
+      Route::get('transaction/verify/{reference}', [TransactionController::class, 'verify']);
+      Route::get('transaction/{id}',               [TransactionController::class, 'show']);
+      Route::get('transaction',                    [TransactionController::class, 'index']);
 
-  // ── Transactions ──────────────────────────────────────────────────────────
-  Route::get('transactions',                   [TransactionController::class, 'index']);
-  Route::get('transactions/{reference}',       [TransactionController::class, 'show']);
-  Route::post('transactions/{reference}/reverse', [TransactionController::class, 'reverse']);
+      // Refunds
+      Route::post('refund',                        [RefundController::class, 'store']);
+      Route::get('refund/{reference}',             [RefundController::class, 'show']);
+      Route::get('refund',                         [RefundController::class, 'index']);
 
-  // ── Webhooks ──────────────────────────────────────────────────────────────
-  Route::get('webhooks/endpoints',             [WebhookController::class, 'indexEndpoints']);
-  Route::post('webhooks/endpoints',            [WebhookController::class, 'storeEndpoint']);
-  Route::delete('webhooks/endpoints/{id}',     [WebhookController::class, 'destroyEndpoint']);
-  Route::get('webhooks/events',                [WebhookController::class, 'indexEvents']);
-  Route::get('webhooks/events/{id}',           [WebhookController::class, 'showEvent']);
-  Route::post('webhooks/deliveries/{id}/retry', [WebhookController::class, 'retryDelivery']);
+      // Transfers
+      Route::post('transfer',                      [TransferController::class, 'store']);
+      Route::get('transfer/verify/{reference}',    [TransferController::class, 'verify']);
+      Route::get('transfer/{reference}',           [TransferController::class, 'show']);
+      Route::get('transfer',                       [TransferController::class, 'index']);
 
-  // ── Settlements ───────────────────────────────────────────────────────────
-  Route::get('settlements',                    [SettlementController::class, 'index']);
-  Route::post('settlements',                   [SettlementController::class, 'run']);
-  Route::get('settlements/{reference}',        [SettlementController::class, 'show']);
+      // Balance
+      Route::get('balance',                        [BalanceController::class, 'show']);
+      Route::get('balance/ledger',                 [BalanceController::class, 'ledger']);
+
+      // Customers
+      Route::post('customer',                      [CustomerController::class, 'store']);
+      Route::get('customer/{email_or_code}',       [CustomerController::class, 'show']);
+      Route::get('customer',                       [CustomerController::class, 'index']);
+    });
 });

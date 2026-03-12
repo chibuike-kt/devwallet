@@ -1,59 +1,119 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DevWallet — Payment Provider Sandbox
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+DevWallet is a local sandbox that simulates real payment providers.
+Change one line in your app — the base URL — and your existing
+integration code works against DevWallet instead of the real provider.
+```
+# Development
+PAYSTACK_BASE_URL=http://localhost:8000/api/paystack
 
-## About Laravel 8.2
+# Production
+PAYSTACK_BASE_URL=https://api.paystack.co
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Supported providers
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Provider | Base URL | Auth |
+|---|---|---|
+| Paystack | `/api/paystack` | `Bearer sk_test_...` |
+| Flutterwave | `/api/flutterwave/v3` | `Bearer sk_test_...` |
+| Stripe | `/api/stripe/v1` | `Bearer sk_test_...` or Basic auth |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Quick start
+```bash
+git clone <repo>
+cd devwallet
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm install && npm run dev
+php artisan serve
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Login at `http://localhost:8000` with:
+- **Email:** demo@devwallet.dev
+- **Password:** password
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## API coverage
 
-### Premium Partners
+### Paystack
+```
+POST /api/paystack/transaction/initialize
+GET  /api/paystack/transaction/verify/:reference
+GET  /api/paystack/transaction
+GET  /api/paystack/transaction/:id
+POST /api/paystack/refund
+GET  /api/paystack/refund
+POST /api/paystack/transfer
+GET  /api/paystack/transfer/verify/:reference
+GET  /api/paystack/balance
+POST /api/paystack/customer
+GET  /api/paystack/customer/:email_or_code
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Flutterwave
+```
+POST /api/flutterwave/v3/payments
+GET  /api/flutterwave/v3/transactions/:id/verify
+GET  /api/flutterwave/v3/transactions
+POST /api/flutterwave/v3/transfers
+GET  /api/flutterwave/v3/transfers/:id
+GET  /api/flutterwave/v3/balances/:currency
+GET  /api/flutterwave/v3/balances
+```
 
-## Contributing
+### Stripe
+```
+POST /api/stripe/v1/payment_intents
+GET  /api/stripe/v1/payment_intents/:id
+POST /api/stripe/v1/payment_intents/:id/confirm
+POST /api/stripe/v1/payment_intents/:id/cancel
+GET  /api/stripe/v1/payment_intents
+POST /api/stripe/v1/refunds
+GET  /api/stripe/v1/refunds/:id
+GET  /api/stripe/v1/refunds
+POST /api/stripe/v1/transfers
+GET  /api/stripe/v1/transfers/:id
+GET  /api/stripe/v1/balance
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Simulation controls
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Every project has a **Simulation** panel where you can:
 
-## Security Vulnerabilities
+- **Set a failure rate** (0–100%) — percentage of transactions that fail automatically
+- **Force the next transaction to fail** — one-shot, clears after use
+- **Set transfer processing speed** — Instant / Slow (~5s) / Timeout (~30s)
+- **Fire webhooks manually** — trigger `charge.success`, `transfer.success`,
+  or `transfer.failed` against your registered endpoints using real transaction data
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Webhooks
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Webhooks are delivered with provider-accurate signatures:
+
+| Provider | Header | Algorithm |
+|---|---|---|
+| Paystack | `x-paystack-signature` | HMAC-SHA512 |
+| Flutterwave | `verif-hash` | Static secret |
+| Stripe | `stripe-signature` | HMAC-SHA256 + timestamp |
+
+---
+
+## Stack
+
+- Laravel 11
+- SQLite (development)
+- Tailwind CSS
+- Blade
+- spatie/laravel-activitylog

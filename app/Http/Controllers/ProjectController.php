@@ -89,4 +89,11 @@ class ProjectController extends Controller
             ->route('projects.index')
             ->with('success', 'Project archived.');
     }
+
+    public function switch(Request $request, Project $project): RedirectResponse
+    {
+        $this->authorize('view', $project);
+        session(['active_project_id' => $project->id]);
+        return redirect()->route('projects.paystack.overview', $project);
+    }
 }

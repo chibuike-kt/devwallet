@@ -254,6 +254,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->name('projects.simulation.webhook');
 
+    Route::post(
+        'projects/{project}/switch',
+        [App\Http\Controllers\ProjectController::class, 'switch']
+    )
+        ->name('projects.switch');
+
 });
 
 require __DIR__ . '/auth.php';

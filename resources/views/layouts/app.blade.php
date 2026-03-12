@@ -32,15 +32,18 @@
             </div>
 
             {{-- Project switcher --}}
-            @php $activeProject = session('active_project_id')
-            ? \App\Models\Project::find(session('active_project_id'))
-            : auth()->user()?->projects()->active()->first();
+            @php
+            $activeProject = null;
+            if (auth()->check()) {
+            $activeProjectId = session('active_project_id');
+            $activeProject = $activeProjectId
+            ? \App\Models\Project::find($activeProjectId)
+            : auth()->user()->projects()->where('status', 'active')->first();
+            }
             @endphp
-
             <div class="px-4 py-3 border-b border-white/10">
                 @if($activeProject)
-                <a href="{{ route('projects.index') }}"
-                    class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 transition-colors group">
+                <div class="flex items-center gap-2.5 p-2 rounded-lg">
                     <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                         style="background-color: {{ $activeProject->color ?? '#0e8de6' }}22">
                         <span class="text-xs font-bold"
@@ -53,18 +56,58 @@
                             {{ $activeProject->name }}
                         </p>
                         <p class="text-white/40 text-[10px] uppercase tracking-wider">
-                            {{ $activeProject->environment }} environment
+                            {{ $activeProject->providerLabel() }} · {{ $activeProject->environment }}
                         </p>
                     </div>
-                    <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors flex-shrink-0"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                </div>
+
+                {{-- Other projects --}}
+                @php
+                $otherProjects = auth()->user()->projects()
+                ->active()
+                ->where('id', '!=', $activeProject->id)
+                ->get();
+                @endphp
+
+                @foreach($otherProjects as $otherProject)
+                <form method="POST"
+                    action="{{ route('projects.switch', $otherProject) }}">
+                    @csrf
+                    <button type="submit"
+                        class="w-full flex items-center gap-2.5 p-2 rounded-lg
+                               hover:bg-white/10 transition-colors group text-left mt-0.5">
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+                            style="background-color: {{ $otherProject->color ?? '#0e8de6' }}22">
+                            <span class="text-xs font-bold"
+                                style="color: {{ $otherProject->color ?? '#0e8de6' }}">
+                                {{ $otherProject->initials() }}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-white/60 text-xs font-medium truncate
+                                  group-hover:text-white transition-colors">
+                                {{ $otherProject->name }}
+                            </p>
+                            <p class="text-white/30 text-[10px] uppercase tracking-wider">
+                                {{ $otherProject->providerLabel() }}
+                            </p>
+                        </div>
+                    </button>
+                </form>
+                @endforeach
+
+                <a href="{{ route('projects.create') }}"
+                    class="flex items-center gap-2 p-2 mt-1 rounded-lg
+                  hover:bg-white/10 transition-colors">
+                    <svg class="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
+                    <span class="text-white/30 text-xs hover:text-white/50">New project</span>
                 </a>
                 @else
                 <a href="{{ route('projects.create') }}"
-                    class="flex items-center gap-2 p-2 rounded-lg border border-dashed border-white/20
-                          hover:border-white/40 transition-colors">
+                    class="flex items-center gap-2 p-2 rounded-lg border border-dashed
+                  border-white/20 hover:border-white/40 transition-colors">
                     <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>

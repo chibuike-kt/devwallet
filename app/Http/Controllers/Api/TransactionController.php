@@ -3,24 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Transaction;
+use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TransactionController extends ApiController
 {
+  public function __construct(protected TransactionService $transactions) {}
+
   /**
    * GET /api/v1/transactions
-   * List transactions for the project with optional filters.
    */
   public function index(Request $request): JsonResponse
   {
-    $project = $request->_api_project;
-
-    $query = Transaction::where('project_id', $project->id)
+    $query = Transaction::where('project_id', $request->_api_project->id)
       ->with('wallet')
       ->latest();
 
-    // Optional filters
     if ($request->filled('status')) {
       $query->where('status', $request->status);
     }
@@ -30,13 +29,22 @@ class TransactionController extends ApiController
     }
 
     if ($request->filled('wallet_reference')) {
-      $query->whereHas('wallet', function ($q) use ($request) {
-        $q->where('reference', $request->wallet_reference);
-      });
+      $query->whereHas(
+        'wallet',
+        fn($q) =>
+        $q->where('reference', $request->wallet_reference)
+      );
     }
 
-    $perPage      = min((int) ($request->per_page ?? 20), 100);
-    $transactions = $query->paginate($perPage);
+    if ($request->filled('date_from')) {
+      $query->whereDate('created_at', '>=', $request->date_from);
+    }
+
+    if ($request->filled('date_to')) {
+      $query->whereDate('created_at', '<=', $request->date_to);
+    }
+
+    $transactions = $query->paginate(min((int)($request->per_page ?? 20), 100));
 
     return $this->success([
       'transactions' => $transactions->map(
@@ -53,22 +61,53 @@ class TransactionController extends ApiController
 
   /**
    * GET /api/v1/transactions/{reference}
-   * Get a single transaction by reference.
    */
   public function show(Request $request, string $reference): JsonResponse
   {
-    $project = $request->_api_project;
+    $tx = Transaction::where('project_id', $request->_api_project->id)
+      ->where('reference', $reference)
+      ->with(['wallet', 'settlementBatch'])
+      ->first();
 
-    $tx = Transaction::where('project_id', $project->id)
+    if (!$tx) return $this->notFound("Transaction '{$reference}' not found.");
+
+    return $this->success($this->formatTransaction($tx, detailed: true));
+  }
+
+  /**
+   * POST /api/v1/transactions/{reference}/reverse
+   */
+  public function reverse(Request $request, string $reference): JsonResponse
+  {
+    $tx = Transaction::where('project_id', $request->_api_project->id)
       ->where('reference', $reference)
       ->with('wallet')
       ->first();
 
-    if (!$tx) {
-      return $this->notFound("Transaction '{$reference}' not found.");
-    }
+    if (!$tx) return $this->notFound("Transaction '{$reference}' not found.");
 
-    return $this->success($this->formatTransaction($tx, detailed: true));
+    $request->validate([
+      'reason' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    try {
+      $reversal = $this->transactions->reverse(
+        $tx,
+        $request->reason ?? 'API reversal'
+      );
+
+      return $this->created([
+        'reversal'     => $this->formatTransaction($reversal),
+        'original'     => $this->formatTransaction($tx->fresh()),
+        'wallet'       => [
+          'reference'         => $tx->wallet->reference,
+          'balance'           => $tx->wallet->fresh()->balance,
+          'balance_formatted' => $tx->wallet->fresh()->formattedBalance(),
+        ],
+      ], 'Transaction reversed successfully.');
+    } catch (\RuntimeException $e) {
+      return $this->error($e->getMessage());
+    }
   }
 
   // ─── Formatter ────────────────────────────────────────────────────────────
@@ -98,10 +137,11 @@ class TransactionController extends ApiController
     ];
 
     if ($detailed) {
-      $base['idempotency_key']       = $tx->idempotency_key;
-      $base['provider_reference']    = $tx->provider_reference;
-      $base['related_wallet_id']     = $tx->related_wallet_id;
-      $base['settlement_batch_id']   = $tx->settlement_batch_id;
+      $base['idempotency_key']     = $tx->idempotency_key;
+      $base['provider_reference']  = $tx->provider_reference;
+      $base['settlement_batch']    = $tx->settlementBatch
+        ? ['reference' => $tx->settlementBatch->reference]
+        : null;
     }
 
     return $base;

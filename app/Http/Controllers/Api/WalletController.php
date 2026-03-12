@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Services\TransactionService;
 use App\Services\WalletService;
@@ -17,13 +18,11 @@ class WalletController extends ApiController
 
   /**
    * GET /api/v1/wallets
-   * List all wallets in the authenticated project.
    */
   public function index(Request $request): JsonResponse
   {
-    $project = $request->_api_project;
-
-    $wallets = $project->wallets()
+    $wallets = $request->_api_project
+      ->wallets()
       ->latest()
       ->get()
       ->map(fn(Wallet $w) => $this->formatWallet($w));
@@ -32,53 +31,53 @@ class WalletController extends ApiController
   }
 
   /**
+   * POST /api/v1/wallets
+   */
+  public function store(Request $request): JsonResponse
+  {
+    $validated = $request->validate([
+      'name'     => ['required', 'string', 'max:100'],
+      'currency' => ['required', 'in:NGN,USD,KES,GHS'],
+    ]);
+
+    $wallet = $request->_api_project->wallets()->create([
+      'name'     => $validated['name'],
+      'currency' => $validated['currency'],
+      'status'   => 'active',
+    ]);
+
+    return $this->created($this->formatWallet($wallet), 'Wallet created.');
+  }
+
+  /**
    * GET /api/v1/wallets/{reference}
-   * Get a single wallet by its reference.
    */
   public function show(Request $request, string $reference): JsonResponse
   {
-    $project = $request->_api_project;
-
-    $wallet = $project->wallets()
-      ->where('reference', $reference)
-      ->first();
-
-    if (!$wallet) {
-      return $this->notFound("Wallet '{$reference}' not found in this project.");
-    }
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
 
     return $this->success($this->formatWallet($wallet));
   }
 
   /**
-   * POST /api/v1/wallets/fund
-   * Credit a wallet.
+   * POST /api/v1/wallets/{reference}/fund
    */
-  public function fund(Request $request): JsonResponse
+  public function fund(Request $request, string $reference): JsonResponse
   {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
     $validated = $request->validate([
-      'wallet_reference' => ['required', 'string'],
-      'amount'           => ['required', 'numeric', 'min:1'],
-      'narration'        => ['nullable', 'string', 'max:255'],
-      'idempotency_key'  => ['nullable', 'string', 'max:100'],
+      'amount'          => ['required', 'numeric', 'min:1'],
+      'narration'       => ['nullable', 'string', 'max:255'],
+      'idempotency_key' => ['nullable', 'string', 'max:100'],
     ]);
 
-    $project = $request->_api_project;
-
-    $wallet = $project->wallets()
-      ->where('reference', $validated['wallet_reference'])
-      ->first();
-
-    if (!$wallet) {
-      return $this->notFound("Wallet '{$validated['wallet_reference']}' not found.");
-    }
-
     try {
-      $amountInMinorUnits = (int) round($validated['amount'] * 100);
-
       $tx = $this->transactions->fund(
         wallet: $wallet,
-        amount: $amountInMinorUnits,
+        amount: $this->toMinorUnits($validated['amount']),
         narration: $validated['narration'] ?? 'API funding',
         provider: 'api',
         idempotencyKey: $validated['idempotency_key'] ?? null,
@@ -94,34 +93,23 @@ class WalletController extends ApiController
   }
 
   /**
-   * POST /api/v1/wallets/debit
-   * Debit a wallet.
+   * POST /api/v1/wallets/{reference}/debit
    */
-  public function debit(Request $request): JsonResponse
+  public function debit(Request $request, string $reference): JsonResponse
   {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
     $validated = $request->validate([
-      'wallet_reference' => ['required', 'string'],
-      'amount'           => ['required', 'numeric', 'min:1'],
-      'narration'        => ['nullable', 'string', 'max:255'],
-      'idempotency_key'  => ['nullable', 'string', 'max:100'],
+      'amount'          => ['required', 'numeric', 'min:1'],
+      'narration'       => ['nullable', 'string', 'max:255'],
+      'idempotency_key' => ['nullable', 'string', 'max:100'],
     ]);
 
-    $project = $request->_api_project;
-
-    $wallet = $project->wallets()
-      ->where('reference', $validated['wallet_reference'])
-      ->first();
-
-    if (!$wallet) {
-      return $this->notFound("Wallet '{$validated['wallet_reference']}' not found.");
-    }
-
     try {
-      $amountInMinorUnits = (int) round($validated['amount'] * 100);
-
       $tx = $this->transactions->debit(
         wallet: $wallet,
-        amount: $amountInMinorUnits,
+        amount: $this->toMinorUnits($validated['amount']),
         narration: $validated['narration'] ?? 'API debit',
         provider: 'api',
         idempotencyKey: $validated['idempotency_key'] ?? null,
@@ -138,7 +126,6 @@ class WalletController extends ApiController
 
   /**
    * POST /api/v1/wallets/transfer
-   * Transfer between two wallets in the same project.
    */
   public function transfer(Request $request): JsonResponse
   {
@@ -150,46 +137,139 @@ class WalletController extends ApiController
       'idempotency_key'       => ['nullable', 'string', 'max:100'],
     ]);
 
-    $project = $request->_api_project;
+    $from = $this->resolveWallet($request, $validated['from_wallet_reference']);
+    $to   = $this->resolveWallet($request, $validated['to_wallet_reference']);
 
-    $from = $project->wallets()
-      ->where('reference', $validated['from_wallet_reference'])
-      ->first();
-
-    $to = $project->wallets()
-      ->where('reference', $validated['to_wallet_reference'])
-      ->first();
-
-    if (!$from) {
-      return $this->notFound("Source wallet '{$validated['from_wallet_reference']}' not found.");
-    }
-
-    if (!$to) {
-      return $this->notFound("Destination wallet '{$validated['to_wallet_reference']}' not found.");
-    }
+    if (!$from) return $this->notFound("Source wallet '{$validated['from_wallet_reference']}' not found.");
+    if (!$to)   return $this->notFound("Destination wallet '{$validated['to_wallet_reference']}' not found.");
 
     try {
-      $amountInMinorUnits = (int) round($validated['amount'] * 100);
-
       $tx = $this->transactions->transfer(
         from: $from,
         to: $to,
-        amount: $amountInMinorUnits,
+        amount: $this->toMinorUnits($validated['amount']),
         narration: $validated['narration'] ?? 'API transfer',
         idempotencyKey: $validated['idempotency_key'] ?? null,
       );
 
       return $this->created([
-        'transaction'   => $this->formatTransaction($tx),
-        'from_wallet'   => $this->formatWallet($from->fresh()),
-        'to_wallet'     => $this->formatWallet($to->fresh()),
+        'transaction' => $this->formatTransaction($tx),
+        'from_wallet' => $this->formatWallet($from->fresh()),
+        'to_wallet'   => $this->formatWallet($to->fresh()),
       ], 'Transfer completed successfully.');
     } catch (\RuntimeException $e) {
       return $this->error($e->getMessage());
     }
   }
 
-  // ─── Formatters ───────────────────────────────────────────────────────────
+  /**
+   * POST /api/v1/wallets/{reference}/freeze
+   */
+  public function freeze(Request $request, string $reference): JsonResponse
+  {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
+    if ($wallet->isFrozen()) {
+      return $this->error('Wallet is already frozen.');
+    }
+
+    $this->wallets->freeze($wallet);
+
+    return $this->success($this->formatWallet($wallet->fresh()), 'Wallet frozen.');
+  }
+
+  /**
+   * POST /api/v1/wallets/{reference}/unfreeze
+   */
+  public function unfreeze(Request $request, string $reference): JsonResponse
+  {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
+    if (!$wallet->isFrozen()) {
+      return $this->error('Wallet is not frozen.');
+    }
+
+    $this->wallets->unfreeze($wallet);
+
+    return $this->success($this->formatWallet($wallet->fresh()), 'Wallet unfrozen.');
+  }
+
+  /**
+   * GET /api/v1/wallets/{reference}/ledger
+   */
+  public function ledger(Request $request, string $reference): JsonResponse
+  {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
+    $entries = $wallet->ledgerEntries()
+      ->with('transaction')
+      ->latest()
+      ->paginate(50);
+
+    return $this->success([
+      'wallet'  => $this->formatWallet($wallet),
+      'entries' => $entries->map(fn($entry) => [
+        'id'              => $entry->id,
+        'direction'       => $entry->direction->value,
+        'amount'          => $entry->amount,
+        'currency'        => $entry->currency,
+        'running_balance' => $entry->running_balance,
+        'narration'       => $entry->narration,
+        'transaction_reference' => $entry->transaction?->reference,
+        'created_at'      => $entry->created_at->toIso8601String(),
+      ]),
+      'pagination' => [
+        'total'        => $entries->total(),
+        'per_page'     => $entries->perPage(),
+        'current_page' => $entries->currentPage(),
+        'last_page'    => $entries->lastPage(),
+      ],
+    ]);
+  }
+
+  /**
+   * GET /api/v1/wallets/{reference}/transactions
+   */
+  public function transactions(Request $request, string $reference): JsonResponse
+  {
+    $wallet = $this->resolveWallet($request, $reference);
+    if (!$wallet) return $this->notFound("Wallet '{$reference}' not found.");
+
+    $transactions = $wallet->transactions()
+      ->latest()
+      ->paginate(20);
+
+    return $this->success([
+      'wallet'       => $this->formatWallet($wallet),
+      'transactions' => $transactions->map(
+        fn($tx) => $this->formatTransaction($tx)
+      ),
+      'pagination' => [
+        'total'        => $transactions->total(),
+        'per_page'     => $transactions->perPage(),
+        'current_page' => $transactions->currentPage(),
+        'last_page'    => $transactions->lastPage(),
+      ],
+    ]);
+  }
+
+  // ─── Private helpers ──────────────────────────────────────────────────────
+
+  private function resolveWallet(Request $request, string $reference): ?Wallet
+  {
+    return $request->_api_project
+      ->wallets()
+      ->where('reference', $reference)
+      ->first();
+  }
+
+  private function toMinorUnits(float $amount): int
+  {
+    return (int) round($amount * 100);
+  }
 
   private function formatWallet(Wallet $wallet): array
   {

@@ -260,6 +260,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->name('projects.switch');
 
+    Route::get('/docs', [App\Http\Controllers\DocsController::class, 'index'])
+        ->name('docs');
+
 });
 
 require __DIR__ . '/auth.php';

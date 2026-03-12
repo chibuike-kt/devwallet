@@ -89,4 +89,21 @@
     .sidebar-link.active {
         @apply bg-brand-50 text-brand-700 hover:bg-brand-50 hover:text-brand-700;
     }
+
+    .docs-link {
+    @apply flex items-center px-3 py-1.5 rounded-lg text-sm text-slate-500
+           hover:text-slate-800 hover:bg-slate-100 transition-colors;
+}
+
+.docs-link.active {
+    @apply text-brand-600 bg-brand-50 font-medium;
+}
+
+.docs-h3 {
+    @apply text-sm font-semibold text-slate-800 mt-6 mb-2;
+}
+
+.docs-inline-code {
+    @apply font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded;
+}
 }

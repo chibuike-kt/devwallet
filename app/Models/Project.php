@@ -20,17 +20,46 @@ class Project extends Model
         'environment',
         'provider',
         'color',
+        'sim_failure_rate',
+        'sim_force_next_fail',
+        'sim_transfer_delay',
         'status',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'sim_force_next_fail' => 'boolean',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function shouldSimulateFail(): bool
+    {
+        // Force fail takes priority — consume it immediately
+        if ($this->sim_force_next_fail) {
+            $this->update(['sim_force_next_fail' => false]);
+            return true;
+        }
+
+        // Probabilistic failure rate
+        if ($this->sim_failure_rate > 0) {
+            return rand(1, 100) <= $this->sim_failure_rate;
+        }
+
+        return false;
+    }
+
+    public function transferDelayMs(): int
+    {
+        return match ($this->sim_transfer_delay) {
+            'slow'    => 5000,
+            'timeout' => 30000,
+            default   => 0,
+        };
     }
 
 

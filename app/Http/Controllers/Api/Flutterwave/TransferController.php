@@ -41,13 +41,29 @@ class TransferController extends Controller
       'status'                   => 'pending',
     ]);
 
-    dispatch(function () use ($transfer) {
+    $project      = $request->_api_project;
+    $delayMs      = $project->transferDelayMs();
+    $shouldFail   = $project->shouldSimulateFail();
+
+    dispatch(function () use ($transfer, $delayMs, $shouldFail) {
+      if ($delayMs > 0) {
+        usleep($delayMs * 1000);
+      }
+
+      $newStatus = $shouldFail ? 'failed' : 'success';
+
       $transfer->update([
-        'status'       => 'success',
-        'completed_at' => now(),
+        'status'       => $newStatus,
+        'completed_at' => $shouldFail ? null : now(),
       ]);
-      app(PaystackWebhookService::class)
-        ->fireTransferSuccess($transfer->fresh());
+
+      $webhook = app(PaystackWebhookService::class);
+
+      if ($shouldFail) {
+        $webhook->fireTransferFailed($transfer->fresh());
+      } else {
+        $webhook->fireTransferSuccess($transfer->fresh());
+      }
     })->afterResponse();
 
     return response()->json([

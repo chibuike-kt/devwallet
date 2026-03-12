@@ -78,7 +78,7 @@ class TransactionController extends Controller
     // Auto-complete initialized transactions on verify
     // This mirrors real Paystack behaviour where verify confirms payment
     if ($tx->status === 'initialized') {
-      $shouldFail = $tx->force_fail;
+      $shouldFail = $tx->force_fail || $request->_api_project->shouldSimulateFail();
 
       $tx->update([
         'status'             => $shouldFail ? 'failed' : 'success',

@@ -106,8 +106,8 @@
                     Webhooks
                 </x-sidebar-link>
 
-                <x-sidebar-link :route="route('projects.scenarios.index', $activeProject)"
-                    active="{{ request()->routeIs('projects.scenarios.*') }}"
+                <x-sidebar-link :route="route('projects.simulation.index', $activeProject)"
+                    active="{{ request()->routeIs('projects.simulation.*') }}"
                     icon="simulation">
                     Simulation
                 </x-sidebar-link>

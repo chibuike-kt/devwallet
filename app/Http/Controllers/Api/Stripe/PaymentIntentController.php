@@ -80,7 +80,7 @@ class PaymentIntentController extends Controller
       );
     }
 
-    $shouldFail = $tx->force_fail;
+    $shouldFail = $tx->force_fail || $request->_api_project->shouldSimulateFail();
 
     $tx->update([
       'status'             => $shouldFail ? 'failed' : 'success',

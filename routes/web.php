@@ -228,6 +228,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->name('projects.paystack.customers.show');
 
+
+    // ── Simulation ───────────────────────────────────────────────────────────────
+    Route::get(
+        'projects/{project}/simulation',
+        [App\Http\Controllers\SimulationController::class, 'index']
+    )
+        ->name('projects.simulation.index');
+
+    Route::post(
+        'projects/{project}/simulation/settings',
+        [App\Http\Controllers\SimulationController::class, 'updateSettings']
+    )
+        ->name('projects.simulation.settings');
+
+    Route::post(
+        'projects/{project}/simulation/reset',
+        [App\Http\Controllers\SimulationController::class, 'reset']
+    )
+        ->name('projects.simulation.reset');
+
+    Route::post(
+        'projects/{project}/simulation/webhook',
+        [App\Http\Controllers\SimulationController::class, 'fireWebhook']
+    )
+        ->name('projects.simulation.webhook');
+
 });
 
 require __DIR__ . '/auth.php';

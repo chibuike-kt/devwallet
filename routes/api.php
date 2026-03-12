@@ -8,8 +8,6 @@ use App\Http\Controllers\Api\Paystack\TransactionController;
 use App\Http\Controllers\Api\Paystack\TransferController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('api')->group(function () {
-
   // ── Health ────────────────────────────────────────────────────────────────
   Route::get('ping', fn() => response()->json([
     'status'  => true,
@@ -47,4 +45,3 @@ Route::prefix('api')->group(function () {
       Route::get('customer/{email_or_code}',       [CustomerController::class, 'show']);
       Route::get('customer',                       [CustomerController::class, 'index']);
     });
-});

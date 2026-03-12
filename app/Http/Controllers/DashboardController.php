@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
-use App\Models\Wallet;
-use App\Models\WebhookDelivery;
+use App\Models\Project;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -13,24 +11,24 @@ class DashboardController extends Controller
   {
     $user = $request->user();
 
-    $projectIds = $user->projects()->pluck('id');
-    $walletIds  = Wallet::whereIn('project_id', $projectIds)->pluck('id');
+    $activeProject = session('active_project_id')
+      ? Project::find(session('active_project_id'))
+      : $user->projects()->active()->first();
 
-    $webhookCount = \App\Models\WebhookEvent::whereIn('project_id', $projectIds)->count();
+    if ($activeProject) {
+      session(['active_project_id' => $activeProject->id]);
+      return redirect()->route('projects.paystack.overview', $activeProject);
+    }
 
-    $stats = [
-      'projects'     => $user->projects()->active()->count(),
-      'wallets'      => $walletIds->count(),
-      'transactions' => Transaction::whereIn('project_id', $projectIds)->count(),
-      'webhooks'     => $webhookCount,
-    ];
-
-    $recentTransactions = Transaction::whereIn('project_id', $projectIds)
-      ->with(['wallet', 'project'])
-      ->latest()
-      ->take(8)
-      ->get();
-
-    return view('dashboard', compact('stats', 'recentTransactions'));
+    // No projects yet — show the old dashboard
+    return view('dashboard', [
+      'stats' => [
+        'projects'     => 0,
+        'wallets'      => 0,
+        'transactions' => 0,
+        'webhooks'     => 0,
+      ],
+      'recentTransactions' => collect(),
+    ]);
   }
 }

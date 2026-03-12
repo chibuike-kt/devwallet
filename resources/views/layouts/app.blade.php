@@ -1,197 +1,179 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="en" class="h-full">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ ($title ?? '') ? $title . ' — ' : '' }}{{ config('app.name', 'DevWallet') }}</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ (isset($title) ? $title . ' — ' : '') }}DevWallet</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-surface-50">
+<body class="h-full bg-[#f5f6fa] font-sans antialiased">
 
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex h-full min-h-screen">
 
-        {{-- Sidebar --}}
-        <aside class="hidden lg:flex lg:flex-col w-64 bg-white border-r border-slate-200 flex-shrink-0">
+        {{-- ── Sidebar ─────────────────────────────────────────────────────────── --}}
+        <aside class="w-64 bg-[#011B33] flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-30">
 
             {{-- Logo --}}
-            <div class="flex items-center gap-2.5 h-16 px-5 border-b border-slate-200">
-                <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            <div class="h-16 flex items-center px-6 border-b border-white/10">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                    </div>
+                    <span class="text-white font-bold text-base tracking-tight">DevWallet</span>
+                    <span class="text-[10px] font-semibold text-brand-400 bg-brand-500/20 px-1.5 py-0.5 rounded-full">
+                        SANDBOX
+                    </span>
+                </a>
+            </div>
+
+            {{-- Project switcher --}}
+            @php $activeProject = session('active_project_id')
+            ? \App\Models\Project::find(session('active_project_id'))
+            : auth()->user()?->projects()->active()->first();
+            @endphp
+
+            <div class="px-4 py-3 border-b border-white/10">
+                @if($activeProject)
+                <a href="{{ route('projects.index') }}"
+                    class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 transition-colors group">
+                    <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+                        style="background-color: {{ $activeProject->color ?? '#0e8de6' }}22">
+                        <span class="text-xs font-bold"
+                            style="color: {{ $activeProject->color ?? '#0e8de6' }}">
+                            {{ $activeProject->initials() }}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white text-xs font-semibold truncate">
+                            {{ $activeProject->name }}
+                        </p>
+                        <p class="text-white/40 text-[10px] uppercase tracking-wider">
+                            {{ $activeProject->environment }} environment
+                        </p>
+                    </div>
+                    <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors flex-shrink-0"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                     </svg>
-                </div>
-                <div>
-                    <span class="text-slate-900 font-semibold text-sm tracking-tight">DevWallet</span>
-                    <p class="text-slate-400 text-xs leading-tight">Simulation Platform</p>
-                </div>
+                </a>
+                @else
+                <a href="{{ route('projects.create') }}"
+                    class="flex items-center gap-2 p-2 rounded-lg border border-dashed border-white/20
+                          hover:border-white/40 transition-colors">
+                    <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="text-white/40 text-xs">Create a project</span>
+                </a>
+                @endif
             </div>
 
             {{-- Navigation --}}
-            <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
 
-                @php
-                $activeProjectId = session('active_project_id');
-                $activeProject = $activeProjectId
-                ? auth()->user()->projects()->find($activeProjectId)
-                : auth()->user()->projects()->active()->first();
-                @endphp
-
-                <p class="px-3 pt-1 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Main</p>
-
-                <a href="{{ route('dashboard') }}"
-                    class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
+                {{-- Main nav --}}
+                <x-sidebar-link route="dashboard" icon="overview">
                     Overview
-                </a>
+                </x-sidebar-link>
 
-                <a href="{{ route('projects.index') }}"
-                    class="sidebar-link {{ request()->routeIs('projects.index') || request()->routeIs('projects.create') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                    Projects
-                </a>
-
-                {{-- Project-scoped section --}}
                 @if($activeProject)
+                <x-sidebar-link :route="route('projects.paystack.transactions', $activeProject)"
+                    active="{{ request()->routeIs('projects.paystack.transactions*') }}"
+                    icon="transactions">
+                    Transactions
+                </x-sidebar-link>
 
-                <div class="pt-3 pb-1">
-                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-                        <div class="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                            style="background-color: {{ $activeProject->color }}">
-                            {{ strtoupper(substr($activeProject->name, 0, 1)) }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs font-semibold text-slate-700 truncate">{{ $activeProject->name }}</p>
-                            <p class="text-xs text-slate-400">{{ $activeProject->environmentLabel() }}</p>
-                        </div>
-                        <a href="{{ route('projects.index') }}" title="Switch project"
-                            class="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                            </svg>
-                        </a>
+                <x-sidebar-link :route="route('projects.paystack.transfers', $activeProject)"
+                    active="{{ request()->routeIs('projects.paystack.transfers*') }}"
+                    icon="transfers">
+                    Transfers
+                </x-sidebar-link>
+
+                <x-sidebar-link :route="route('projects.paystack.customers', $activeProject)"
+                    active="{{ request()->routeIs('projects.paystack.customers*') }}"
+                    icon="customers">
+                    Customers
+                </x-sidebar-link>
+
+                <x-sidebar-link :route="route('projects.webhooks.index', $activeProject)"
+                    active="{{ request()->routeIs('projects.webhooks.*') }}"
+                    icon="webhooks">
+                    Webhooks
+                </x-sidebar-link>
+
+                <x-sidebar-link :route="route('projects.scenarios.index', $activeProject)"
+                    active="{{ request()->routeIs('projects.scenarios.*') }}"
+                    icon="simulation">
+                    Simulation
+                </x-sidebar-link>
+
+                <x-sidebar-link :route="route('projects.api-keys.index', $activeProject)"
+                    active="{{ request()->routeIs('projects.api-keys.*') }}"
+                    icon="keys">
+                    API Keys
+                </x-sidebar-link>
+
+                {{-- Advanced section --}}
+                <div x-data="{ open: {{ request()->routeIs('projects.wallets.*', 'projects.settlements.*', 'audit.*') ? 'true' : 'false' }} }"
+                    class="pt-3">
+                    <button @click="open = !open"
+                        class="w-full flex items-center justify-between px-3 py-1.5 text-white/30
+                                   hover:text-white/50 transition-colors text-[10px] font-semibold
+                                   uppercase tracking-widest">
+                        <span>Advanced</span>
+                        <svg class="w-3 h-3 transition-transform" :class="open ? 'rotate-180' : ''"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div x-show="open" x-cloak class="mt-0.5 space-y-0.5">
+                        <x-sidebar-link :route="route('projects.wallets.index', $activeProject)"
+                            active="{{ request()->routeIs('projects.wallets.*') }}"
+                            icon="wallets">
+                            Wallets
+                        </x-sidebar-link>
+
+                        <x-sidebar-link :route="route('projects.settlements.index', $activeProject)"
+                            active="{{ request()->routeIs('projects.settlements.*') }}"
+                            icon="settlements">
+                            Settlements
+                        </x-sidebar-link>
+
+                        <x-sidebar-link route="audit.index" icon="audit">
+                            Audit Log
+                        </x-sidebar-link>
                     </div>
                 </div>
-
-                <p class="px-3 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Simulation</p>
-
-                <a href="{{ route('projects.scenarios.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.scenarios.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Scenarios
-                </a>
-
-                <a href="{{ route('projects.settlements.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.settlements.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Settlements
-                </a>
-
-                <a href="{{ route('projects.wallets.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.wallets.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    Wallets
-                </a>
-
-                <a href="{{ route('projects.transactions.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.transactions.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                    Transactions
-                </a>
-
-
-                <a href="{{ route('projects.webhooks.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.webhooks.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    Webhooks
-                </a>
-
-                <a href="{{ route('projects.api-keys.index', $activeProject) }}"
-                    class="sidebar-link {{ request()->routeIs('projects.api-keys.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    </svg>
-                    API Keys
-                </a>
-
-                {{-- Ledger links per wallet --}}
-                @php
-                $sidebarWallets = $activeProject->wallets()->take(3)->get();
-                @endphp
-                @if($sidebarWallets->isNotEmpty())
-                @foreach($sidebarWallets as $sidebarWallet)
-                <a href="{{ route('projects.wallets.ledger', [$activeProject, $sidebarWallet]) }}"
-                    class="sidebar-link pl-8 {{ request()->routeIs('projects.wallets.ledger') && request()->route('wallet')?->id === $sidebarWallet->id ? 'active' : '' }}">
-                    <svg class="w-3.5 h-3.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <span class="truncate text-xs">{{ $sidebarWallet->name }} Ledger</span>
-                </a>
-                @endforeach
                 @endif
-
-                @else
-
-                <p class="px-3 pt-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Simulation</p>
-
-                @foreach(['Scenarios', 'Wallets', 'Transactions', 'Ledger'] as $item)
-                <div class="sidebar-link opacity-50 cursor-not-allowed">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    {{ $item }}
-                    <span class="ml-auto badge badge-slate text-xs">No project</span>
-                </div>
-                @endforeach
-
-                @endif
-
-                <p class="px-3 pt-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">System</p>
-
-                <a href="{{ route('audit.index') }}"
-                    class="sidebar-link {{ request()->routeIs('audit.*') ? 'active' : '' }}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    Audit Log
-                </a>
 
             </nav>
 
             {{-- User footer --}}
-            <div class="px-3 py-4 border-t border-slate-200">
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-100 cursor-pointer transition-colors group">
-                    <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-                        <span class="text-brand-700 text-xs font-semibold">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+            <div class="border-t border-white/10 px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-brand-500/30 flex items-center justify-center flex-shrink-0">
+                        <span class="text-brand-300 text-xs font-bold">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                         </span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-900 truncate">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-slate-400 truncate">{{ auth()->user()->email }}</p>
+                        <p class="text-white text-xs font-semibold truncate">{{ auth()->user()->name }}</p>
+                        <p class="text-white/40 text-[10px] truncate">{{ auth()->user()->email }}</p>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" title="Sign out"
-                            class="text-slate-400 hover:text-slate-600 transition-colors opacity-0 group-hover:opacity-100">
+                        <button type="submit"
+                            class="text-white/30 hover:text-white/70 transition-colors p-1"
+                            title="Log out">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
                         </button>
                     </form>
@@ -200,32 +182,43 @@
 
         </aside>
 
-        {{-- Main content area --}}
-        <div class="flex-1 flex flex-col overflow-hidden">
+        {{-- ── Main content ────────────────────────────────────────────────────── --}}
+        <div class="flex-1 flex flex-col ml-64 min-h-screen">
 
             {{-- Top bar --}}
-            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-                <div>
-                    @isset($title)
-                    <h1 class="text-base font-semibold text-slate-900">{{ $title }}</h1>
-                    @endisset
+            <header class="h-16 bg-white border-b border-slate-100 flex items-center
+                        justify-between px-8 sticky top-0 z-20">
+                <div class="flex items-center gap-3">
+                    @if(isset($title))
+                    <h1 class="text-sm font-semibold text-slate-900">{{ $title }}</h1>
+                    @endif
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="badge badge-green">
+                    <span class="flex items-center gap-1.5 text-xs text-emerald-600
+                             bg-emerald-50 px-2.5 py-1 rounded-full font-medium">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        Sandbox Active
+                        Sandbox
                     </span>
+                    @if($activeProject)
+                    <a href="{{ route('projects.api-keys.index', $activeProject) }}"
+                        class="text-xs text-slate-500 hover:text-slate-700 transition-colors font-medium">
+                        API Keys →
+                    </a>
+                    @endif
                 </div>
             </header>
 
-            {{-- Scrollable page content --}}
-            <main class="flex-1 overflow-y-auto p-6">
+            {{-- Page content --}}
+            <main class="flex-1 px-8 py-7">
                 {{ $slot }}
             </main>
 
         </div>
 
     </div>
+
+    {{-- Alpine for advanced section toggle --}}
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 </body>
 

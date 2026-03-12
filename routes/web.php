@@ -18,7 +18,7 @@ Route::get('/', fn() => view('welcome'))->name('welcome');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
         ->name('dashboard');
 
     // Projects
@@ -184,6 +184,49 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [ApiKeyController::class, 'revoke']
     )
         ->name('projects.api-keys.revoke');
+
+    // ── Paystack-style UI pages ───────────────────────────────────────────────
+    Route::get(
+        'projects/{project}/overview',
+        [App\Http\Controllers\Paystack\DashboardController::class, 'index']
+    )
+        ->name('projects.paystack.overview');
+
+    Route::get(
+        'projects/{project}/paystack/transactions',
+        [App\Http\Controllers\Paystack\TransactionUiController::class, 'index']
+    )
+        ->name('projects.paystack.transactions');
+
+    Route::get(
+        'projects/{project}/paystack/transactions/{reference}',
+        [App\Http\Controllers\Paystack\TransactionUiController::class, 'show']
+    )
+        ->name('projects.paystack.transactions.show');
+
+    Route::get(
+        'projects/{project}/paystack/transfers',
+        [App\Http\Controllers\Paystack\TransferUiController::class, 'index']
+    )
+        ->name('projects.paystack.transfers');
+
+    Route::get(
+        'projects/{project}/paystack/transfers/{reference}',
+        [App\Http\Controllers\Paystack\TransferUiController::class, 'show']
+    )
+        ->name('projects.paystack.transfers.show');
+
+    Route::get(
+        'projects/{project}/paystack/customers',
+        [App\Http\Controllers\Paystack\CustomerUiController::class, 'index']
+    )
+        ->name('projects.paystack.customers');
+
+    Route::get(
+        'projects/{project}/paystack/customers/{code}',
+        [App\Http\Controllers\Paystack\CustomerUiController::class, 'show']
+    )
+        ->name('projects.paystack.customers.show');
 
 });
 

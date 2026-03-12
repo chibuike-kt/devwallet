@@ -156,124 +156,184 @@
       <div class="card">
         <div class="card-header">
           <h3 class="font-semibold text-slate-900 text-sm">Usage example</h3>
-        </div>
-        <div class="card-body space-y-4">
-          <p class="text-xs text-slate-500">
-            Pass your key as a Bearer token in the <code class="font-mono bg-slate-100 px-1 rounded">Authorization</code> header on every API request.
+          <p class="text-xs text-slate-500 mt-0.5">
+            Your base URL for {{ $project->providerLabel() }} simulation
           </p>
+        </div>
+        <div class="card-body space-y-5">
 
-          {{-- cURL --}}
+          {{-- Base URL chip --}}
+          <div class="flex items-center gap-3 p-3 bg-slate-900 rounded-xl">
+            <span class="text-xs text-slate-400 flex-shrink-0">Base URL</span>
+            <code class="font-mono text-sm text-emerald-400 flex-1 truncate">
+              {{ $project->providerBaseUrl() }}
+            </code>
+          </div>
+
+          @if($project->isPaystack())
+          {{-- Paystack snippets --}}
           <div>
             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">cURL</p>
-            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">curl -X POST {{ url('/api/v1/wallets/fund') }} \
-  -H "Authorization: Bearer sk_test_your_key_here" \
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">curl -X POST {{ $project->providerBaseUrl() }}/transaction/initialize \
+  -H "Authorization: Bearer sk_test_your_key" \
   -H "Content-Type: application/json" \
-  -d '{
-    "wallet_reference": "WLT-XXXXXXXX",
-    "amount": 5000,
-    "currency": "NGN",
-    "narration": "Customer deposit"
-  }'</pre>
+  -d '{"email":"customer@email.com","amount":50000}'</pre>
           </div>
-
-          {{-- JavaScript --}}
           <div>
             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">JavaScript</p>
-            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">const response = await fetch('{{ url('/api/v1/wallets/fund') }}', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer sk_test_your_key_here',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    wallet_reference: 'WLT-XXXXXXXX',
-    amount: 5000,
-    currency: 'NGN',
-    narration: 'Customer deposit',
-  })
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">const paystack = axios.create({
+  baseURL: '{{ $project->providerBaseUrl() }}',
+  headers: { Authorization: 'Bearer sk_test_your_key' }
 });
 
-const data = await response.json();</pre>
+const { data } = await paystack.post('/transaction/initialize', {
+  email: 'customer@email.com',
+  amount: 50000,
+});</pre>
           </div>
+
+          @elseif($project->isFlutterwave())
+          {{-- Flutterwave snippets --}}
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">cURL</p>
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">curl -X POST {{ $project->providerBaseUrl() }}/payments \
+  -H "Authorization: Bearer sk_test_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tx_ref": "hooli-tx-1920bbtytty",
+    "amount": "100",
+    "currency": "NGN",
+    "redirect_url": "https://yourapp.com/callback",
+    "customer": {"email":"customer@email.com"}
+  }'</pre>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">JavaScript</p>
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">const flw = axios.create({
+  baseURL: '{{ $project->providerBaseUrl() }}',
+  headers: { Authorization: 'Bearer sk_test_your_key' }
+});
+
+const { data } = await flw.post('/payments', {
+  tx_ref: 'hooli-tx-' + Date.now(),
+  amount: '100',
+  currency: 'NGN',
+  customer: { email: 'customer@email.com' }
+});</pre>
+          </div>
+
+          @elseif($project->isStripe())
+          {{-- Stripe snippets --}}
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">cURL</p>
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">curl -X POST {{ $project->providerBaseUrl() }}/payment_intents \
+  -u sk_test_your_key: \
+  -d amount=2000 \
+  -d currency=usd \
+  -d "payment_method_types[]=card"</pre>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">JavaScript (stripe-node style)</p>
+            <pre class="bg-slate-900 text-emerald-400 text-xs font-mono rounded-xl p-4 overflow-x-auto leading-relaxed">const stripe = require('stripe')('sk_test_your_key', {
+  host: '{{ parse_url($project->providerBaseUrl(), PHP_URL_HOST) }}',
+  protocol: 'http',
+  port: {{ parse_url($project->providerBaseUrl(), PHP_URL_PORT) ?? 80 }},
+});
+
+const intent = await stripe.paymentIntents.create({
+  amount: 2000,
+  currency: 'usd',
+  payment_method_types: ['card'],
+});</pre>
+          </div>
+          @endif
+
+          {{-- .env tip --}}
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">.env</p>
+            <pre class="font-mono text-xs text-slate-700 leading-relaxed">{{ strtoupper($project->provider) }}_BASE_URL={{ $project->providerBaseUrl() }}
+            {{ strtoupper($project->provider) }}_SECRET_KEY=sk_test_your_key
+            </pre>
+          </div>
+
         </div>
       </div>
-    </div>
 
-    {{-- Right: generate new key --}}
-    <div class="space-y-5">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="font-semibold text-slate-900 text-sm">Generate new key</h3>
+      {{-- Right: generate new key --}}
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="font-semibold text-slate-900 text-sm">Generate new key</h3>
+          </div>
+          <div class="card-body">
+            <form method="POST"
+              action="{{ route('projects.api-keys.store', $project) }}"
+              class="space-y-4">
+              @csrf
+              <div>
+                <label class="form-label">
+                  Key name <span class="text-red-400">*</span>
+                </label>
+                <input type="text"
+                  name="name"
+                  class="form-input @error('name') border-red-300 @enderror"
+                  value="{{ old('name') }}"
+                  placeholder="e.g. Local development"
+                  autofocus>
+                @error('name')
+                <p class="form-error">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-slate-400 mt-1.5">
+                  Name it by environment or purpose.
+                </p>
+              </div>
+
+              <button type="submit" class="btn-primary w-full justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Generate key
+              </button>
+            </form>
+          </div>
         </div>
-        <div class="card-body">
-          <form method="POST"
-            action="{{ route('projects.api-keys.store', $project) }}"
-            class="space-y-4">
-            @csrf
-            <div>
-              <label class="form-label">
-                Key name <span class="text-red-400">*</span>
-              </label>
-              <input type="text"
-                name="name"
-                class="form-input @error('name') border-red-300 @enderror"
-                value="{{ old('name') }}"
-                placeholder="e.g. Local development"
-                autofocus>
-              @error('name')
-              <p class="form-error">{{ $message }}</p>
-              @enderror
-              <p class="text-xs text-slate-400 mt-1.5">
-                Name it by environment or purpose.
-              </p>
+
+        {{-- Security note --}}
+        <div class="card p-5 bg-amber-50 border-amber-100">
+          <div class="flex items-start gap-3">
+            <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-xs text-amber-800 leading-relaxed space-y-1.5">
+              <p class="font-semibold">Keep your keys safe</p>
+              <p>Keys are shown once and never stored in plaintext. If you lose a key, revoke it and generate a new one.</p>
+              <p>Never commit keys to version control. Use environment variables.</p>
             </div>
-
-            <button type="submit" class="btn-primary w-full justify-center">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Generate key
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {{-- Security note --}}
-      <div class="card p-5 bg-amber-50 border-amber-100">
-        <div class="flex items-start gap-3">
-          <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div class="text-xs text-amber-800 leading-relaxed space-y-1.5">
-            <p class="font-semibold">Keep your keys safe</p>
-            <p>Keys are shown once and never stored in plaintext. If you lose a key, revoke it and generate a new one.</p>
-            <p>Never commit keys to version control. Use environment variables.</p>
           </div>
         </div>
+
+        {{-- Environment variables tip --}}
+        <div class="card p-5">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            .env example
+          </p>
+          <pre class="font-mono text-xs text-slate-700 leading-relaxed">DEVWALLET_API_KEY=sk_test_...
+DEVWALLET_BASE_URL={{ url('/api/v1') }}</pre>
+        </div>
       </div>
 
-      {{-- Environment variables tip --}}
-      <div class="card p-5">
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          .env example
-        </p>
-        <pre class="font-mono text-xs text-slate-700 leading-relaxed">DEVWALLET_API_KEY=sk_test_...
-DEVWALLET_BASE_URL={{ url('/api/v1') }}</pre>
-      </div>
     </div>
 
-  </div>
-
-  <script>
-    function copyNewKey() {
-      const val = document.getElementById('new-key-value')?.innerText?.trim();
-      if (!val) return;
-      navigator.clipboard.writeText(val).then(() => {
-        const btn = event.target;
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy', 2000);
-      });
-    }
-  </script>
+    <script>
+      function copyNewKey() {
+        const val = document.getElementById('new-key-value')?.innerText?.trim();
+        if (!val) return;
+        navigator.clipboard.writeText(val).then(() => {
+          const btn = event.target;
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2000);
+        });
+      }
+    </script>
 
 </x-app-layout>

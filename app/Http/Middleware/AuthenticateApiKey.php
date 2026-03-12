@@ -13,30 +13,64 @@ class AuthenticateApiKey
     {
         $header = $request->header('Authorization');
 
-        if (!$header || !str_starts_with($header, 'Bearer ')) {
+        // Stripe uses Basic auth — key as username
+        if (!$header) {
+            $header = $request->header('Authorization');
+        }
+
+        // Support both Bearer and Basic (Stripe style)
+        $plaintext = null;
+
+        if ($header && str_starts_with($header, 'Bearer ')) {
+            $plaintext = substr($header, 7);
+        } elseif ($header && str_starts_with($header, 'Basic ')) {
+            $decoded   = base64_decode(substr($header, 6));
+            $plaintext = explode(':', $decoded)[0]; // username is the key
+        }
+
+        if (!$plaintext) {
             return response()->json([
-                'error'   => 'Unauthenticated.',
-                'message' => 'Provide your API key as a Bearer token in the Authorization header.',
+                'status'  => false,
+                'message' => 'No API key provided. Pass your key as a Bearer token.',
             ], 401);
         }
 
-        $plaintext = substr($header, 7);
-        $apiKey    = ApiKey::findByPlaintext($plaintext);
+        $apiKey = ApiKey::findByPlaintext($plaintext);
 
         if (!$apiKey) {
             return response()->json([
-                'error'   => 'Invalid API key.',
-                'message' => 'The provided key does not exist or has been revoked.',
+                'status'  => false,
+                'message' => 'Invalid or revoked API key.',
             ], 401);
         }
 
-        // Stamp last used
+        // Validate provider match from URL
+        $urlProvider = $this->detectProviderFromUrl($request->path());
+
+        if ($urlProvider && $apiKey->project->provider !== $urlProvider) {
+            $correctBase = $apiKey->project->providerBaseUrl();
+            return response()->json([
+                'status'  => false,
+                'message' => "This key belongs to a {$apiKey->project->providerLabel()} project. "
+                    . "Use {$correctBase} as your base URL.",
+            ], 401);
+        }
+
         $apiKey->update(['last_used_at' => now()]);
 
-        // Attach project and key to request for use in API controllers
-        $request->merge(['_api_project' => $apiKey->project]);
-        $request->merge(['_api_key'     => $apiKey]);
+        $request->merge([
+            '_api_project' => $apiKey->project,
+            '_api_key'     => $apiKey,
+        ]);
 
         return $next($request);
+    }
+
+    private function detectProviderFromUrl(string $path): ?string
+    {
+        if (str_contains($path, 'paystack'))    return 'paystack';
+        if (str_contains($path, 'flutterwave')) return 'flutterwave';
+        if (str_contains($path, 'stripe'))      return 'stripe';
+        return null;
     }
 }

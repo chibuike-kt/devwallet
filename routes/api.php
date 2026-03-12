@@ -7,6 +7,14 @@ use App\Http\Controllers\Api\Paystack\RefundController;
 use App\Http\Controllers\Api\Paystack\TransactionController;
 use App\Http\Controllers\Api\Paystack\TransferController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Flutterwave\PaymentController as FlwPaymentController;
+use App\Http\Controllers\Api\Flutterwave\TransactionController as FlwTransactionController;
+use App\Http\Controllers\Api\Flutterwave\TransferController as FlwTransferController;
+use App\Http\Controllers\Api\Flutterwave\BalanceController as FlwBalanceController;
+use App\Http\Controllers\Api\Stripe\PaymentIntentController;
+use App\Http\Controllers\Api\Stripe\RefundController as StripeRefundController;
+use App\Http\Controllers\Api\Stripe\TransferController as StripeTransferController;
+use App\Http\Controllers\Api\Stripe\BalanceController as StripeBalanceController;
 
   // ── Health ────────────────────────────────────────────────────────────────
   Route::get('ping', fn() => response()->json([
@@ -45,3 +53,37 @@ use Illuminate\Support\Facades\Route;
       Route::get('customer/{email_or_code}',       [CustomerController::class, 'show']);
       Route::get('customer',                       [CustomerController::class, 'index']);
     });
+
+// ── Flutterwave-compatible API ───────────────────────────────────────────────
+Route::prefix('flutterwave/v3')
+  ->middleware('auth.apikey')
+  ->group(function () {
+
+    Route::post('payments',                          [FlwPaymentController::class, 'store']);
+    Route::get('transactions/{id}/verify',           [FlwTransactionController::class, 'verify']);
+    Route::get('transactions',                       [FlwTransactionController::class, 'index']);
+    Route::post('transfers',                         [FlwTransferController::class, 'store']);
+    Route::get('transfers/{id}',                     [FlwTransferController::class, 'show']);
+    Route::get('transfers',                          [FlwTransferController::class, 'index']);
+    Route::get('balances/{currency}',                [FlwBalanceController::class, 'show']);
+    Route::get('balances',                           [FlwBalanceController::class, 'index']);
+  });
+
+// ── Stripe-compatible API ───────────────────────────────────────────────
+Route::prefix('stripe/v1')
+  ->middleware('auth.apikey')
+  ->group(function () {
+
+    Route::post('payment_intents',                   [PaymentIntentController::class, 'store']);
+    Route::get('payment_intents/{id}',               [PaymentIntentController::class, 'show']);
+    Route::post('payment_intents/{id}/confirm',      [PaymentIntentController::class, 'confirm']);
+    Route::post('payment_intents/{id}/cancel',       [PaymentIntentController::class, 'cancel']);
+    Route::get('payment_intents',                    [PaymentIntentController::class, 'index']);
+    Route::post('refunds',                           [StripeRefundController::class, 'store']);
+    Route::get('refunds/{id}',                       [StripeRefundController::class, 'show']);
+    Route::get('refunds',                            [StripeRefundController::class, 'index']);
+    Route::post('transfers',                         [StripeTransferController::class, 'store']);
+    Route::get('transfers/{id}',                     [StripeTransferController::class, 'show']);
+    Route::get('transfers',                          [StripeTransferController::class, 'index']);
+    Route::get('balance',                            [StripeBalanceController::class, 'show']);
+  });

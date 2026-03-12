@@ -26,23 +26,41 @@ class ProjectController extends Controller
         return view('projects.create');
     }
 
-    public function store(StoreProjectRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
+        $validated = $request->validate([
+            'name'        => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:300'],
+            'environment' => ['required', 'in:test,staging'],
+            'provider'    => ['required', 'in:paystack,flutterwave,stripe'],
+            'color'       => ['nullable', 'string'],
+        ]);
+
         $project = $request->user()->projects()->create([
-            'name'        => $request->name,
-            'description' => $request->description,
-            'environment' => $request->environment,
-            'color'       => $request->color ?? '#0e8de6',
+            'name'        => $validated['name'],
+            'slug'        => \Str::slug($validated['name']) . '-' . \Str::random(6),
+            'description' => $validated['description'] ?? null,
+            'environment' => $validated['environment'],
+            'provider'    => $validated['provider'],
+            'color'       => match ($validated['provider']) {
+                'paystack'    => '#00C3F7',
+                'flutterwave' => '#F5A623',
+                'stripe'      => '#635BFF',
+                default       => '#0e8de6',
+            },
+            'status'      => 'active',
         ]);
 
         activity()
             ->causedBy($request->user())
             ->performedOn($project)
-            ->log('Created project: ' . $project->name);
+            ->log("Created project: {$project->name} ({$project->providerLabel()})");
+
+        session(['active_project_id' => $project->id]);
 
         return redirect()
-            ->route('projects.show', $project)
-            ->with('success', 'Project "' . $project->name . '" created successfully.');
+            ->route('projects.paystack.overview', $project)
+            ->with('success', "Project created. Your {$project->providerLabel()} sandbox is ready.");
     }
 
     public function show(Request $request, Project $project): View

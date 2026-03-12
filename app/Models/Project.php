@@ -18,6 +18,7 @@ class Project extends Model
         'slug',
         'description',
         'environment',
+        'provider',
         'color',
         'status',
     ];
@@ -59,6 +60,51 @@ class Project extends Model
             'test'    => 'Test',
             'staging' => 'Staging',
             default   => ucfirst($this->environment),
+        };
+    }
+
+    public function isPaystack(): bool
+    {
+        return $this->provider === 'paystack';
+    }
+
+    public function isFlutterwave(): bool
+    {
+        return $this->provider === 'flutterwave';
+    }
+
+    public function isStripe(): bool
+    {
+        return $this->provider === 'stripe';
+    }
+
+    public function providerLabel(): string
+    {
+        return match ($this->provider) {
+            'paystack'    => 'Paystack',
+            'flutterwave' => 'Flutterwave',
+            'stripe'      => 'Stripe',
+            default       => ucfirst($this->provider),
+        };
+    }
+
+    public function providerBaseUrl(): string
+    {
+        return match ($this->provider) {
+            'paystack'    => url('/api/paystack'),
+            'flutterwave' => url('/api/flutterwave/v3'),
+            'stripe'      => url('/api/stripe/v1'),
+            default       => url('/api/' . $this->provider),
+        };
+    }
+
+    public function providerColor(): string
+    {
+        return match ($this->provider) {
+            'paystack'    => '#00C3F7',
+            'flutterwave' => '#F5A623',
+            'stripe'      => '#635BFF',
+            default       => '#0e8de6',
         };
     }
 

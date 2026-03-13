@@ -87,3 +87,14 @@ Route::prefix('stripe/v1')
     Route::get('transfers',                          [StripeTransferController::class, 'index']);
     Route::get('balance',                            [StripeBalanceController::class, 'show']);
   });
+
+// Checkout page — no auth required
+Route::get('paystack/checkout/{reference}', [
+  App\Http\Controllers\Api\Paystack\CheckoutController::class,
+  'show'
+])->name('paystack.checkout');
+
+Route::post('paystack/checkout/{reference}', [
+  App\Http\Controllers\Api\Paystack\CheckoutController::class,
+  'pay'
+])->name('paystack.checkout.pay');

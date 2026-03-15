@@ -110,6 +110,62 @@ Webhooks are delivered with provider-accurate signatures:
 
 ---
 
+## Using DevWallet without PocketPay
+
+Any app works. Here's a Node.js example:
+```javascript
+const axios = require('axios');
+
+const paystack = axios.create({
+  baseURL: 'http://localhost:8000/api/paystack',
+  headers: { Authorization: 'Bearer sk_test_your_key' }
+});
+
+// Initialize
+const { data } = await paystack.post('/transaction/initialize', {
+  email: 'customer@yourapp.com',
+  amount: 50000,
+  callback_url: 'http://localhost:3000/payment/callback',
+});
+
+// Redirect user to data.data.authorization_url
+
+// In your callback route — verify
+app.get('/payment/callback', async (req, res) => {
+  const { reference } = req.query;
+  const { data } = await paystack.get(`/transaction/verify/${reference}`);
+
+  if (data.data.status === 'success') {
+    // Payment confirmed — fulfil order
+  }
+});
+
+// Webhook handler
+app.post('/webhooks/paystack', express.raw({ type: 'application/json' }), (req, res) => {
+  const hash = require('crypto')
+    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+    .update(req.body)
+    .digest('hex');
+
+  if (hash !== req.headers['x-paystack-signature']) {
+    return res.sendStatus(401);
+  }
+
+  const { event, data } = JSON.parse(req.body);
+  if (event === 'charge.success') {
+    // Handle payment
+  }
+
+  res.sendStatus(200);
+});
+```
+
+Switch to production by changing two lines in `.env`:
+```
+PAYSTACK_BASE_URL=https://api.paystack.co
+PAYSTACK_SECRET_KEY=sk_live_your_real_key
+```
+
 ## Stack
 
 - Laravel 11

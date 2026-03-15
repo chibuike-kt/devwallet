@@ -53,6 +53,7 @@
           Getting started
         </p>
         <a href="#introduction" class="docs-link active">Introduction</a>
+        <a href="#quickstart" class="docs-link">Quick start</a>
         <a href="#authentication" class="docs-link">Authentication</a>
 
         <p class="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-4">
@@ -112,6 +113,57 @@
                     ['Flutterwave', '/api/flutterwave/v3',  'Bearer token'],
                     ['Stripe',      '/api/stripe/v1',       'Bearer or Basic auth'],
                 ]" />
+        </section>
+
+        {{-- Quick start --}}
+        <section id="quickstart">
+          <h2 class="text-xl font-bold text-slate-900 mb-3">Quick start</h2>
+          <p class="text-slate-500 text-sm leading-relaxed mb-5">
+            You don't need PocketPay. Any app that integrates a payment provider
+            works with DevWallet — Node, Python, Laravel, whatever.
+            Three steps to get started.
+          </p>
+
+          <h3 class="docs-h3">1. Create a project and get your key</h3>
+          <p class="text-slate-500 text-sm leading-relaxed mb-3">
+            Log in to DevWallet, create a project, pick your provider, generate an API key.
+          </p>
+
+          <h3 class="docs-h3">2. Point your app at DevWallet</h3>
+          <x-docs-code language="bash">
+            # .env — change one line
+            PAYSTACK_BASE_URL=http://localhost:8000/api/paystack
+            PAYSTACK_SECRET_KEY=sk_test_your_devwallet_key
+
+            # When you're ready for production, change it back
+            PAYSTACK_BASE_URL=https://api.paystack.co
+          </x-docs-code>
+
+          <h3 class="docs-h3">3. Register a webhook endpoint</h3>
+          <p class="text-slate-500 text-sm leading-relaxed mb-3">
+            In DevWallet → Webhooks → add your local server URL.
+            DevWallet will fire correctly-signed webhooks to your app.
+          </p>
+          <x-docs-code language="bash">
+            # Your local webhook endpoint
+            http://localhost:3000/webhooks/paystack
+          </x-docs-code>
+
+          <p class="text-slate-500 text-sm leading-relaxed mt-5 mb-3">
+            That's it. Initialize a transaction, redirect your user to the
+            <code class="docs-inline-code">authorization_url</code>, they see
+            a simulated checkout page, click Pay, get redirected back to your
+            <code class="docs-inline-code">callback_url</code>, your app calls
+            verify — the full flow works exactly like production.
+          </p>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 mt-4">
+            <strong>Webhook tip:</strong> Use
+            <a href="https://ngrok.com" class="underline">ngrok</a> or
+            <a href="https://expose.dev" class="underline">Expose</a>
+            to get a public URL for your local webhook handler, then register
+            that URL in DevWallet. DevWallet will deliver webhooks to it in real time.
+          </div>
         </section>
 
         {{-- Authentication --}}

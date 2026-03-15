@@ -19,7 +19,7 @@ use App\Http\Controllers\Api\Stripe\BalanceController as StripeBalanceController
   // ── Health ────────────────────────────────────────────────────────────────
   Route::get('ping', fn() => response()->json([
     'status'  => true,
-    'message' => 'DevWallet Paystack Sandbox is running.',
+    'message' => 'DevWallet Sandbox is running.',
   ]));
 
   // ── Paystack-compatible API ───────────────────────────────────────────────
@@ -98,3 +98,13 @@ Route::post('paystack/checkout/{reference}', [
   App\Http\Controllers\Api\Paystack\CheckoutController::class,
   'pay'
 ])->name('paystack.checkout.pay');
+
+//Flutterwave checkout
+Route::get('flutterwave/v3/checkout/{reference}', [
+  App\Http\Controllers\Api\Flutterwave\CheckoutController::class, 'show'
+]);
+
+Route::post('flutterwave/v3/checkout/{reference}', [
+  App\Http\Controllers\Api\Flutterwave\CheckoutController::class,
+  'pay'
+]);

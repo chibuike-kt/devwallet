@@ -50,6 +50,7 @@
                                 class="form-input"
                                 placeholder="Repeat your password" />
                         </div>
+                        
 
                         <button type="submit" class="btn-primary w-full justify-center py-2.5">
                             Create account

@@ -108,3 +108,13 @@ Route::post('flutterwave/v3/checkout/{reference}', [
   App\Http\Controllers\Api\Flutterwave\CheckoutController::class,
   'pay'
 ]);
+
+// Stripe checkout
+Route::get('stripe/v1/checkout/{reference}',  [
+  App\Http\Controllers\Api\Stripe\CheckoutController::class,
+  'show'
+]);
+Route::post('stripe/v1/checkout/{reference}', [
+  App\Http\Controllers\Api\Stripe\CheckoutController::class,
+  'pay'
+]);

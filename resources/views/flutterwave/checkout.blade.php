@@ -81,9 +81,8 @@
         <form method="POST" action="/api/flutterwave/v3/checkout/{{ $tx->reference }}">
           @csrf
           <input type="hidden" name="action" value="pay">
-          <button type="submit"
-            class="w-full bg-[#F5A623] hover:bg-[#e09520] text-white font-semibold
-                               py-3 rounded-xl transition-colors text-sm">
+          <input type="hidden" name="callback_url" value="{{ $callbackUrl }}">
+          <button type="submit" ...>
             Pay {{ $tx->currency }} {{ number_format($tx->amount / 100, 2) }}
           </button>
         </form>
@@ -91,12 +90,12 @@
         <form method="POST" action="/api/flutterwave/v3/checkout/{{ $tx->reference }}">
           @csrf
           <input type="hidden" name="action" value="fail">
-          <button type="submit"
-            class="w-full bg-white hover:bg-red-50 text-red-500 font-semibold
-                               py-3 rounded-xl transition-colors text-sm border border-red-200">
+          <input type="hidden" name="callback_url" value="{{ $callbackUrl }}">
+          <button type="submit" ...>
             Simulate failure
           </button>
         </form>
+
       </div>
 
     </div>

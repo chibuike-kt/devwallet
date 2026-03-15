@@ -14,13 +14,15 @@ class CheckoutController extends Controller
     protected PaystackWebhookService $webhooks
   ) {}
 
-  public function show(string $reference)
+  public function show(Request $request, string $reference)
   {
     $tx = PaystackTransaction::where('reference', $reference)
       ->with('customer')
       ->firstOrFail();
 
-    return view('flutterwave.checkout', compact('tx'));
+    $callbackUrl = $request->query('callback') ?? $tx->callback_url;
+
+    return view('flutterwave.checkout', compact('tx', 'callbackUrl'));
   }
 
   public function pay(Request $request, string $reference)
@@ -51,7 +53,7 @@ class CheckoutController extends Controller
       $this->webhooks->fireChargeSuccess($tx);
     }
 
-    $callbackUrl = $tx->callback_url;
+    $callbackUrl = $request->input('callback_url') ?? $tx->callback_url;
 
     if (!$callbackUrl) {
       return view('flutterwave.checkout-result', compact('tx', 'shouldFail'));

@@ -19,18 +19,17 @@ class CheckoutController extends Controller
   /**
    * Show the simulated Paystack checkout page.
    */
-  public function show(string $reference)
+  public function show(Request $request, string $reference)
   {
     $tx = PaystackTransaction::where('reference', $reference)
       ->with('customer')
       ->firstOrFail();
 
-    return view('paystack.checkout', compact('tx'));
+    $callbackUrl = $request->query('callback') ?? $tx->callback_url;
+
+    return view('paystack.checkout', compact('tx', 'callbackUrl'));
   }
 
-  /**
-   * Simulate payment — complete the transaction and redirect back.
-   */
   public function pay(Request $request, string $reference)
   {
     $tx = PaystackTransaction::where('reference', $reference)
@@ -59,8 +58,7 @@ class CheckoutController extends Controller
       $this->webhooks->fireChargeSuccess($tx);
     }
 
-    // Redirect back to callback URL
-    $callbackUrl = $tx->callback_url;
+    $callbackUrl = $request->input('callback_url') ?? $tx->callback_url;
 
     if (!$callbackUrl) {
       return view('paystack.checkout-result', compact('tx', 'shouldFail'));
@@ -68,7 +66,8 @@ class CheckoutController extends Controller
 
     $separator = str_contains($callbackUrl, '?') ? '&' : '?';
 
-    return redirect($callbackUrl . $separator . 'reference=' . $reference
+    return redirect($callbackUrl . $separator
+      . 'reference=' . $reference
       . '&trxref=' . $reference);
   }
 }

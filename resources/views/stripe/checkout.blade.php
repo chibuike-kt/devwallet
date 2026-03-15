@@ -106,9 +106,10 @@
         <form method="POST" action="/api/stripe/v1/checkout/{{ $tx->reference }}">
           @csrf
           <input type="hidden" name="action" value="pay">
+          <input type="hidden" name="callback_url" value="{{ $callbackUrl }}">
           <button type="submit"
             class="w-full bg-[#635BFF] hover:bg-[#5851ea] text-white font-semibold
-                               py-3 rounded-xl transition-colors text-sm">
+                       py-3 rounded-xl transition-colors text-sm">
             Pay {{ strtoupper($tx->currency) }} {{ number_format($tx->amount / 100, 2) }}
           </button>
         </form>
@@ -116,9 +117,10 @@
         <form method="POST" action="/api/stripe/v1/checkout/{{ $tx->reference }}">
           @csrf
           <input type="hidden" name="action" value="fail">
+          <input type="hidden" name="callback_url" value="{{ $callbackUrl }}">
           <button type="submit"
             class="w-full bg-white hover:bg-red-50 text-red-500 font-semibold
-                               py-3 rounded-xl transition-colors text-sm border border-red-200">
+                       py-3 rounded-xl transition-colors text-sm border border-red-200">
             Simulate failure
           </button>
         </form>

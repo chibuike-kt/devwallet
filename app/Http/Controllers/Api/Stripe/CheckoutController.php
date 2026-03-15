@@ -20,12 +20,9 @@ class CheckoutController extends Controller
       ->with('customer')
       ->firstOrFail();
 
-    // Store callback in session so the POST can use it
-    if ($request->has('callback')) {
-      session(['stripe_callback_' . $reference => $request->query('callback')]);
-    }
+    $callbackUrl = $request->query('callback');
 
-    return view('stripe.checkout', compact('tx'));
+    return view('stripe.checkout', compact('tx', 'callbackUrl'));
   }
 
   public function pay(Request $request, string $reference)
@@ -56,11 +53,8 @@ class CheckoutController extends Controller
       $this->webhooks->fireChargeSuccess($tx);
     }
 
-    // Retrieve callback from session or transaction
-    $callbackUrl = session('stripe_callback_' . $reference)
-      ?? $tx->callback_url;
-
-    session()->forget('stripe_callback_' . $reference);
+    // Use callback from hidden form field
+    $callbackUrl = $request->input('callback_url') ?? $tx->callback_url;
 
     if (!$callbackUrl) {
       return view('stripe.checkout-result', compact('tx', 'shouldFail'));

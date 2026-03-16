@@ -16,6 +16,12 @@ class DashboardController extends Controller
 
     session(['active_project_id' => $project->id]);
 
+    // Auto-abandon stale initialized transactions
+    PaystackTransaction::where('project_id', $project->id)
+      ->where('status', 'initialized')
+      ->where('created_at', '<', now()->subMinutes(30))
+      ->update(['status' => 'abandoned']);
+
     $totalVolume = PaystackTransaction::where('project_id', $project->id)
       ->where('status', 'success')
       ->sum('amount');

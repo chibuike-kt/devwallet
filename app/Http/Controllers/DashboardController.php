@@ -9,6 +9,13 @@ class DashboardController extends Controller
 {
   public function index(Request $request)
   {
+
+    // Auto-abandon stale initialized transactions
+    PaystackTransaction::where('project_id', $project->id)
+      ->where('status', 'initialized')
+      ->where('created_at', '<', now()->subMinutes(30))
+      ->update(['status' => 'abandoned']);
+
     $user = $request->user();
 
     $activeProject = session('active_project_id')
